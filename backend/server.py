@@ -110,6 +110,22 @@ def create_token(user_id: str, role: str) -> str:
     }
     return jwt.encode(payload, JWT_SECRET, algorithm='HS256')
 
+def calc_subscription_expiry(from_date=None):
+    """Se faltam 5 dias ou menos para acabar o mês, dá bônus até o fim do próximo mês."""
+    now = from_date or datetime.now(timezone.utc)
+    last_day = calendar.monthrange(now.year, now.month)[1]
+    days_remaining = last_day - now.day
+    if days_remaining < 5:
+        # Bônus: vai até o fim do próximo mês
+        if now.month == 12:
+            next_year, next_month = now.year + 1, 1
+        else:
+            next_year, next_month = now.year, now.month + 1
+        last_day_next = calendar.monthrange(next_year, next_month)[1]
+        return datetime(next_year, next_month, last_day_next, 23, 59, 59, tzinfo=timezone.utc)
+    else:
+        return now + timedelta(days=30)
+
 async def get_current_user(request: Request) -> dict:
     auth = request.headers.get('Authorization', '')
     if not auth.startswith('Bearer '):
