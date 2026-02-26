@@ -574,7 +574,7 @@ async def stripe_webhook(request: Request):
                 )
                 user_id = tx.get('user_id') or (webhook_response.metadata or {}).get('user_id')
                 if user_id:
-                    new_expiry = (datetime.now(timezone.utc) + timedelta(days=30)).isoformat()
+                    new_expiry = calc_subscription_expiry().isoformat()
                     await db.users.update_one(
                         {'id': user_id},
                         {'$set': {'subscription_expires': new_expiry, 'is_active': True}}
