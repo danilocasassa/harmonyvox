@@ -33,11 +33,13 @@ export default function PlayerPage() {
   const { token } = useAuth();
   const [song, setSong] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [audioLoading, setAudioLoading] = useState(true);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [trackStates, setTrackStates] = useState([]);
   const audioRefs = useRef([]);
+  const blobUrls = useRef([]);
   const animationRef = useRef(null);
   const isSeekingRef = useRef(false);
 
@@ -46,6 +48,7 @@ export default function PlayerPage() {
     return () => {
       if (animationRef.current) cancelAnimationFrame(animationRef.current);
       audioRefs.current.forEach(a => { if (a) { a.pause(); a.src = ''; } });
+      blobUrls.current.forEach(url => URL.revokeObjectURL(url));
     };
   }, [songId]);
 
@@ -59,32 +62,64 @@ export default function PlayerPage() {
       setSong(data);
       setTrackStates(data.tracks.map(() => ({ volume: 1, muted: false, solo: false })));
       audioRefs.current = new Array(data.tracks.length).fill(null);
+      blobUrls.current = new Array(data.tracks.length).fill(null);
+      setLoading(false);
+
+      // Load all audio blobs in parallel
+      if (data.tracks.length > 0) {
+        setAudioLoading(true);
+        await loadAllAudio(data.tracks);
+        setAudioLoading(false);
+      }
     } catch (err) {
       toast.error('Erro ao carregar música');
       navigate('/');
-    } finally {
-      setLoading(false);
     }
   };
 
-  const initAudio = useCallback((index, el) => {
-    if (!el || audioRefs.current[index] === el) return;
-    audioRefs.current[index] = el;
-    el.crossOrigin = 'anonymous';
-    el.preload = 'auto';
-    el.src = `${API}/audio/stream/${songId}/${index}?token=${token}`;
+  const loadAllAudio = async (tracks) => {
+    const promises = tracks.map(async (track, index) => {
+      try {
+        const res = await fetch(`${API}/audio/stream/${songId}/${index}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (!res.ok) throw new Error(`Track ${index} failed`);
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        blobUrls.current[index] = url;
 
-    el.onloadedmetadata = () => {
-      if (el.duration && el.duration > duration) {
-        setDuration(el.duration);
+        const audio = new Audio();
+        audio.preload = 'auto';
+        audio.src = url;
+        audioRefs.current[index] = audio;
+
+        return new Promise((resolve) => {
+          audio.onloadedmetadata = () => {
+            resolve(audio.duration);
+          };
+          audio.onerror = () => resolve(0);
+          // Timeout fallback
+          setTimeout(() => resolve(audio.duration || 0), 5000);
+        });
+      } catch (err) {
+        console.error(`Error loading track ${index}:`, err);
+        return 0;
       }
-    };
+    });
 
-    el.onended = () => {
-      setIsPlaying(false);
-      if (animationRef.current) cancelAnimationFrame(animationRef.current);
-    };
-  }, [songId, token, duration]);
+    const durations = await Promise.all(promises);
+    const maxDuration = Math.max(...durations.filter(d => d > 0));
+    if (maxDuration > 0) setDuration(maxDuration);
+
+    // Set up ended handler on first audio
+    const firstAudio = audioRefs.current.find(a => a);
+    if (firstAudio) {
+      firstAudio.onended = () => {
+        setIsPlaying(false);
+        if (animationRef.current) cancelAnimationFrame(animationRef.current);
+      };
+    }
+  };
 
   const updateTime = useCallback(() => {
     if (!isSeekingRef.current) {
@@ -168,11 +203,7 @@ export default function PlayerPage() {
 
   // Prevent right-click on the entire player page
   useEffect(() => {
-    const handler = (e) => {
-      if (e.target.tagName === 'AUDIO' || e.target.closest('[data-player-area]')) {
-        e.preventDefault();
-      }
-    };
+    const handler = (e) => e.preventDefault();
     document.addEventListener('contextmenu', handler);
     return () => document.removeEventListener('contextmenu', handler);
   }, []);
@@ -191,7 +222,7 @@ export default function PlayerPage() {
   if (!song) return null;
 
   return (
-    <div className="min-h-screen" style={{ background: '#02040a' }} data-player-area="true" onContextMenu={(e) => e.preventDefault()}>
+    <div className="min-h-screen" style={{ background: '#02040a' }} onContextMenu={(e) => e.preventDefault()}>
       {/* Header */}
       <header className="border-b" style={{ borderColor: 'rgba(255,255,255,0.05)', background: 'rgba(2,4,10,0.9)', backdropFilter: 'blur(12px)' }}>
         <div className="max-w-4xl mx-auto px-6 py-4 flex items-center gap-4">
@@ -206,6 +237,14 @@ export default function PlayerPage() {
       </header>
 
       <main className="max-w-4xl mx-auto px-6 py-8 pb-40">
+        {/* Audio loading indicator */}
+        {audioLoading && (
+          <div className="mb-4 p-3 rounded-lg flex items-center gap-3" style={{ background: 'rgba(255,215,0,0.05)', border: '1px solid rgba(255,215,0,0.1)' }}>
+            <div className="animate-spin w-4 h-4 border-2 border-t-transparent rounded-full" style={{ borderColor: '#FFD700', borderTopColor: 'transparent' }} />
+            <span className="text-sm" style={{ color: '#FFD700' }}>Carregando faixas de áudio...</span>
+          </div>
+        )}
+
         {/* Track Lanes */}
         <div className="space-y-3 mb-8">
           <div className="flex items-center justify-between mb-4">
@@ -231,13 +270,6 @@ export default function PlayerPage() {
                   transition: 'all 0.3s ease-out'
                 }}
               >
-                {/* Hidden audio element */}
-                <audio
-                  ref={(el) => initAudio(i, el)}
-                  preload="auto"
-                  style={{ display: 'none' }}
-                  controlsList="nodownload"
-                />
                 {/* Track color indicator */}
                 <div className="w-1 h-10 rounded-full flex-shrink-0" style={{ background: color }} />
                 {/* Track name */}
@@ -328,7 +360,8 @@ export default function PlayerPage() {
               <Button
                 data-testid="player-play-button"
                 onClick={togglePlay}
-                className="w-14 h-14 rounded-full flex items-center justify-center text-black"
+                disabled={audioLoading}
+                className="w-14 h-14 rounded-full flex items-center justify-center text-black disabled:opacity-50"
                 style={{ background: '#FFD700', boxShadow: '0 0 20px rgba(255,215,0,0.3)' }}
               >
                 {isPlaying ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6 ml-0.5" />}
