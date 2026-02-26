@@ -646,7 +646,7 @@ async def admin_create_user(data: AdminUserCreate, admin: dict = Depends(get_adm
         'is_active': True,
         'whatsapp': '',
         'activation_date': datetime.now(timezone.utc).isoformat(),
-        'subscription_expires': (datetime.now(timezone.utc) + timedelta(days=30)).isoformat() if data.role == 'user' else None,
+        'subscription_expires': calc_subscription_expiry().isoformat() if data.role == 'user' else None,
         'price_locked': current_price if data.role == 'user' else None,
         'created_at': datetime.now(timezone.utc).isoformat()
     }
