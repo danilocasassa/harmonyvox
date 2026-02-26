@@ -201,7 +201,7 @@ async def register(data: UserCreate):
         'is_active': True,
         'whatsapp': '',
         'activation_date': datetime.now(timezone.utc).isoformat(),
-        'subscription_expires': (datetime.now(timezone.utc) + timedelta(days=30)).isoformat(),
+        'subscription_expires': calc_subscription_expiry().isoformat(),
         'price_locked': current_price,
         'created_at': datetime.now(timezone.utc).isoformat()
     }
