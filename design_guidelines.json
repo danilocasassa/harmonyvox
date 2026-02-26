@@ -1,0 +1,124 @@
+{
+  "identity": {
+    "name": "E1",
+    "archetype": "The Obsidian Stage",
+    "vibe": "Sophisticated, Acoustic, Precision, Cinematic",
+    "principles": [
+      "Fusion over Imitation: Mix Sheet Music elegance with DAW precision",
+      "Emotion First: Every interaction feels like striking a note",
+      "Content is King: The Song is the Hero",
+      "Dark Mode Default: Studio atmosphere"
+    ]
+  },
+  "typography": {
+    "headings": {
+      "family": "Playfair Display, serif",
+      "usage": "H1-H3, Hero Sections, Song Titles",
+      "weights": "400 (Regular), 700 (Bold)",
+      "attributes": "tracking-tight leading-none"
+    },
+    "body": {
+      "family": "Manrope, sans-serif",
+      "usage": "UI Controls, Track Names, Times, Paragraphs",
+      "weights": "400 (Regular), 500 (Medium), 600 (SemiBold)",
+      "attributes": "tracking-wide for uppercase labels"
+    }
+  },
+  "colors": {
+    "palette_name": "Obsidian Gold",
+    "background": {
+      "default": "#02040a",
+      "paper": "#0f111a",
+      "surface": "#18181b"
+    },
+    "text": {
+      "primary": "#f8fafc",
+      "secondary": "#94a3b8",
+      "muted": "#475569"
+    },
+    "accent": {
+      "primary": "#FFD700",
+      "primary_hover": "#E6C200",
+      "secondary": "#38bdf8",
+      "destructive": "#ef4444",
+      "success": "#22c55e"
+    },
+    "gradients": {
+      "gold_glow": "linear-gradient(135deg, #FFD700 0%, #B8860B 100%)",
+      "midnight_fade": "linear-gradient(to bottom, transparent, #02040a)"
+    }
+  },
+  "spacing": {
+    "scale": "Generous (2x standard)",
+    "container_padding": "p-6 md:p-12",
+    "grid_gap": "gap-6 md:gap-8"
+  },
+  "components": {
+    "buttons": {
+      "primary": "bg-accent-primary text-black font-bold uppercase tracking-wider hover:bg-accent-primary_hover shadow-[0_0_15px_rgba(255,215,0,0.3)] transition-all",
+      "secondary": "border border-white/10 bg-white/5 text-white hover:bg-white/10 backdrop-blur-md",
+      "icon": "rounded-full p-3 hover:bg-white/10 transition-colors"
+    },
+    "cards": {
+      "style": "Glassmorphism",
+      "classes": "bg-[#0f111a]/80 backdrop-blur-xl border border-white/5 shadow-2xl rounded-xl"
+    },
+    "inputs": {
+      "style": "Minimalist",
+      "classes": "bg-black/20 border-white/10 focus:border-accent-primary focus:ring-1 focus:ring-accent-primary rounded-lg h-12"
+    },
+    "multi_track_player": {
+      "container": "bg-[#050508] border-t border-white/10 p-6 fixed bottom-0 w-full z-50 shadow-[0_-10px_40px_rgba(0,0,0,0.5)]",
+      "track_lane": "flex items-center gap-4 p-3 bg-white/5 rounded-lg mb-2 border border-white/5 hover:border-white/10 transition-colors",
+      "fader": "appearance-none bg-white/10 h-1 rounded-full [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-accent-primary",
+      "solo_btn": "text-xs font-bold px-2 py-1 rounded border border-yellow-500/50 text-yellow-500 hover:bg-yellow-500 hover:text-black transition-colors data-[active=true]:bg-yellow-500 data-[active=true]:text-black",
+      "mute_btn": "text-xs font-bold px-2 py-1 rounded border border-red-500/50 text-red-500 hover:bg-red-500 hover:text-white transition-colors data-[active=true]:bg-red-500 data-[active=true]:text-white"
+    }
+  },
+  "layout_strategies": {
+    "marketing": "The Tetris Grid (Mode A) - Asymmetrical, Artistic",
+    "library": "Bento Grid - Album Art Focus",
+    "dashboard": "High Density Grid (Mode B) - Data Heavy"
+  },
+  "visual_enhancers": {
+    "textures": "Use subtle noise overlay on backgrounds (opacity 0.03)",
+    "shadows": "Colored shadows! Use shadow-accent-primary/20 for primary actions",
+    "borders": "1px solid white/5 is mandatory for depth in dark mode"
+  },
+  "motion": {
+    "transitions": "transition-all duration-300 ease-out",
+    "micro_interactions": "Scale 0.98 on click, Lift -2px on hover",
+    "page_load": "Staggered fade-in (0.1s delay per item)"
+  },
+  "image_urls": {
+    "hero": {
+      "url": "https://images.unsplash.com/photo-1769432902785-b17b57e67de0?crop=entropy&cs=srgb&fm=jpg&q=85",
+      "alt": "Choir performing on dark stage with spotlights",
+      "category": "marketing"
+    },
+    "texture_bg": {
+      "url": "https://images.unsplash.com/photo-1769123012414-6c6b5c17ad45?crop=entropy&cs=srgb&fm=jpg&q=85",
+      "alt": "Abstract gold waves on black",
+      "category": "background"
+    },
+    "sheet_music": {
+      "url": "https://images.unsplash.com/photo-1619468153516-a3d994d014d1?crop=entropy&cs=srgb&fm=jpg&q=85",
+      "alt": "Close up sheet music dark",
+      "category": "decoration"
+    },
+    "studio_mic": {
+      "url": "https://images.pexels.com/photos/7301210/pexels-photo-7301210.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+      "alt": "Studio microphone",
+      "category": "feature_card"
+    }
+  },
+  "universal_guidelines": [
+    "NEVER use generic gradients. Use solid dark colors or subtle noise.",
+    "Do not center text by default. Left align + grid for tension.",
+    "Use Playfair Display for 'Soul' (Headings), Manrope for 'Science' (Controls).",
+    "Multi-track player must feel 'tactile' - use shadows/borders to create depth.",
+    "All interactive elements must have data-testid attributes.",
+    "Use 'sonner' for toasts.",
+    "Respect the 'Jewel & Luxury' archetype."
+  ]
+}
