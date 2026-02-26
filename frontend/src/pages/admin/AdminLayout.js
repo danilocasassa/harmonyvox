@@ -1,6 +1,6 @@
 import React from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../../contexts/AuthContext';
 import { LayoutDashboard, Users, Music, Flame, DollarSign, LogOut, Shield } from 'lucide-react';
 
 const navItems = [
