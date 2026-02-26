@@ -538,7 +538,7 @@ async def get_payment_status(session_id: str, request: Request, user: dict = Dep
             {'session_id': session_id},
             {'$set': {'status': 'complete', 'payment_status': 'paid', 'paid_at': datetime.now(timezone.utc).isoformat()}}
         )
-        new_expiry = (datetime.now(timezone.utc) + timedelta(days=30)).isoformat()
+        new_expiry = calc_subscription_expiry().isoformat()
         await db.users.update_one(
             {'id': user['id']},
             {'$set': {'subscription_expires': new_expiry, 'is_active': True}}
