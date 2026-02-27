@@ -78,6 +78,20 @@ export default function AdminUsers() {
     } catch { toast.error('Erro ao remover'); }
   };
 
+  const saveActivationDate = async (userId) => {
+    if (!editDate) { toast.error('Selecione uma data'); return; }
+    setSaving(true);
+    try {
+      const isoDate = new Date(editDate + 'T00:00:00Z').toISOString();
+      await axiosAuth().put(`/admin/users/${userId}`, { activation_date: isoDate });
+      toast.success('Data de ingresso atualizada!');
+      setShowDateEdit(null);
+      setEditDate('');
+      loadUsers();
+    } catch { toast.error('Erro ao atualizar data'); }
+    finally { setSaving(false); }
+  };
+
   const filtered = users.filter(u =>
     u.name?.toLowerCase().includes(search.toLowerCase()) ||
     u.email?.toLowerCase().includes(search.toLowerCase())
