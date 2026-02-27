@@ -75,6 +75,7 @@ class AdminUserUpdate(BaseModel):
     name: Optional[str] = None
     email: Optional[str] = None
     is_active: Optional[bool] = None
+    activation_date: Optional[str] = None
 
 class AdminPasswordReset(BaseModel):
     new_password: str
