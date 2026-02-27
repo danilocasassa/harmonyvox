@@ -663,6 +663,8 @@ async def admin_update_user(user_id: str, data: AdminUserUpdate, admin: dict = D
         update_fields['email'] = data.email
     if data.is_active is not None:
         update_fields['is_active'] = data.is_active
+    if data.activation_date is not None:
+        update_fields['activation_date'] = data.activation_date
     if update_fields:
         await db.users.update_one({'id': user_id}, {'$set': update_fields})
     updated = await db.users.find_one({'id': user_id}, {'_id': 0, 'password_hash': 0})
