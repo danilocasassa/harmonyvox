@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { Switch } from '../../components/ui/switch';
 import { toast } from 'sonner';
-import { Plus, Search, UserCheck, UserX, Key, Trash2 } from 'lucide-react';
+import { Plus, Search, UserCheck, UserX, Key, Trash2, CalendarDays } from 'lucide-react';
 
 export default function AdminUsers() {
   const [users, setUsers] = useState([]);
@@ -15,6 +15,8 @@ export default function AdminUsers() {
   const [search, setSearch] = useState('');
   const [showCreate, setShowCreate] = useState(false);
   const [showPwReset, setShowPwReset] = useState(null);
+  const [showDateEdit, setShowDateEdit] = useState(null);
+  const [editDate, setEditDate] = useState('');
   const [newUser, setNewUser] = useState({ name: '', email: '', password: '', role: 'user' });
   const [newPw, setNewPw] = useState('');
   const [saving, setSaving] = useState(false);
