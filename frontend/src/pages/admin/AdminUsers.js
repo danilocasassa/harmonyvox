@@ -177,7 +177,21 @@ export default function AdminUsers() {
                       {user.role === 'admin' ? 'Admin' : 'Usuário'}
                     </span>
                   </td>
-                  <td className="py-3 px-4" style={{ color: '#94a3b8' }}>{formatDate(user.activation_date)}</td>
+                  <td className="py-3 px-4">
+                    <button
+                      onClick={() => {
+                        setShowDateEdit(user.id);
+                        setEditDate(user.activation_date ? user.activation_date.substring(0, 10) : '');
+                      }}
+                      data-testid={`user-edit-date-${user.id}`}
+                      className="flex items-center gap-1 hover:underline cursor-pointer"
+                      style={{ color: '#94a3b8' }}
+                      title="Editar data de ingresso"
+                    >
+                      {formatDate(user.activation_date)}
+                      <CalendarDays className="w-3 h-3 opacity-50" />
+                    </button>
+                  </td>
                   <td className="py-3 px-4" style={{ color: '#94a3b8' }}>{formatDate(user.subscription_expires)}</td>
                   <td className="py-3 px-4">
                     <div className="flex items-center gap-2">
