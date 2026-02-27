@@ -207,6 +207,31 @@ export default function AdminUsers() {
                   </td>
                   <td className="py-3 px-4">
                     <div className="flex items-center justify-end gap-1">
+                      <Dialog open={showDateEdit === user.id} onOpenChange={(v) => { setShowDateEdit(v ? user.id : null); setEditDate(''); }}>
+                        <DialogTrigger asChild>
+                          <button data-testid={`user-edit-activation-${user.id}`} className="p-2 rounded-lg hover:bg-white/5" style={{ color: '#94a3b8' }} title="Editar data de ingresso">
+                            <CalendarDays className="w-4 h-4" />
+                          </button>
+                        </DialogTrigger>
+                        <DialogContent className="glass-card border-white/10" style={{ background: '#0f111a' }}>
+                          <DialogHeader>
+                            <DialogTitle style={{ fontFamily: 'Playfair Display, serif', color: '#f8fafc' }}>Data de Ingresso - {user.name}</DialogTitle>
+                          </DialogHeader>
+                          <div className="space-y-4 mt-4">
+                            <p className="text-sm" style={{ color: '#94a3b8' }}>Defina desde quando este usuário está ativo na plataforma.</p>
+                            <Input
+                              data-testid={`admin-edit-date-input-${user.id}`}
+                              type="date"
+                              value={editDate}
+                              onChange={(e) => setEditDate(e.target.value)}
+                              className="bg-black/20 border-white/10 text-white"
+                            />
+                            <Button onClick={() => saveActivationDate(user.id)} disabled={saving} data-testid={`admin-save-date-${user.id}`} className="w-full h-10 font-bold text-black" style={{ background: '#FFD700' }}>
+                              {saving ? 'Salvando...' : 'Salvar Data'}
+                            </Button>
+                          </div>
+                        </DialogContent>
+                      </Dialog>
                       <Dialog open={showPwReset === user.id} onOpenChange={(v) => { setShowPwReset(v ? user.id : null); setNewPw(''); }}>
                         <DialogTrigger asChild>
                           <button data-testid={`user-reset-pw-${user.id}`} className="p-2 rounded-lg hover:bg-white/5" style={{ color: '#94a3b8' }} title="Alterar senha">
