@@ -246,7 +246,7 @@ class VocalLayersAPITester:
         return success and isinstance(response, list)
 
     def test_admin_create_user(self):
-        """Test admin create user"""
+        """Test admin create user with plan selection"""
         if not self.admin_token:
             print("❌ No admin token available for create user test")
             return False
@@ -261,7 +261,9 @@ class VocalLayersAPITester:
                 "name": f"Admin Created User {timestamp}",
                 "email": f"admin.created.{timestamp}@test.com",
                 "password": "adminpass123",
-                "role": "user"
+                "role": "user",
+                "plan_type": "monthly",
+                "price_locked": 29.90
             },
             headers={"Authorization": f"Bearer {self.admin_token}"}
         )
@@ -271,20 +273,72 @@ class VocalLayersAPITester:
         return False
 
     def test_admin_update_user(self):
-        """Test admin update user"""
+        """Test admin update user (lock/unlock)"""
         if not self.admin_token or not hasattr(self, 'created_user_id'):
             print("❌ No admin token or created user available for update test")
             return False
             
         success, response = self.run_test(
-            "Admin Update User",
+            "Admin Update User (Lock/Unlock)",
             "PUT",
             f"admin/users/{self.created_user_id}",
             200,
-            data={"name": "Updated Admin User", "is_active": True},
+            data={"name": "Updated Admin User", "is_active": False},
             headers={"Authorization": f"Bearer {self.admin_token}"}
         )
         return success
+
+    def test_admin_activate_user(self):
+        """Test admin activate user with specific expiry date"""
+        if not self.admin_token or not hasattr(self, 'created_user_id'):
+            print("❌ No admin token or created user available for activate test")
+            return False
+            
+        # Set expiry to 30 days from now
+        from datetime import timedelta
+        expiry_date = (datetime.now() + timedelta(days=30)).strftime('%Y-%m-%dT23:59:59Z')
+        
+        success, response = self.run_test(
+            "Admin Activate User with Date",
+            "POST",
+            f"admin/users/{self.created_user_id}/activate",
+            200,
+            data={"subscription_expires": expiry_date},
+            headers={"Authorization": f"Bearer {self.admin_token}"}
+        )
+        return success
+
+    def test_admin_batch_pricing(self):
+        """Test admin batch pricing update"""
+        if not self.admin_token:
+            print("❌ No admin token available for batch pricing test")
+            return False
+            
+        success, response = self.run_test(
+            "Admin Batch Pricing",
+            "POST",
+            "admin/users/batch-pricing",
+            200,
+            data={"new_price": 35.90, "only_increase": True},
+            headers={"Authorization": f"Bearer {self.admin_token}"}
+        )
+        return success and 'message' in response
+
+    def test_admin_password_reset(self):
+        """Test admin password reset functionality"""
+        if not self.admin_token or not hasattr(self, 'created_user_id'):
+            print("❌ No admin token or created user available for password reset test")
+            return False
+            
+        success, response = self.run_test(
+            "Admin Password Reset (Manual)",
+            "PUT",
+            f"admin/users/{self.created_user_id}/password",
+            200,
+            data={"new_password": "newpassword123"},
+            headers={"Authorization": f"Bearer {self.admin_token}"}
+        )
+        return success and 'message' in response
 
     # ===== ADMIN SONG MANAGEMENT TESTS =====
 
@@ -385,6 +439,16 @@ class VocalLayersAPITester:
         )
         return success and 'price' in response
 
+    def test_get_plans(self):
+        """Test get plans endpoint"""
+        success, response = self.run_test(
+            "Get Plans",
+            "GET",
+            "plans",
+            200
+        )
+        return success and isinstance(response, list) and len(response) > 0
+
     # ===== UNAUTHORIZED ACCESS TESTS =====
 
     def test_protected_endpoints_without_auth(self):
@@ -417,6 +481,7 @@ def main():
     tests = [
         # Public endpoints
         tester.test_public_pricing,
+        tester.test_get_plans,
         
         # Auth tests
         tester.test_admin_login,
@@ -439,6 +504,9 @@ def main():
         tester.test_admin_get_users,
         tester.test_admin_create_user,
         tester.test_admin_update_user,
+        tester.test_admin_activate_user,
+        tester.test_admin_batch_pricing,
+        tester.test_admin_password_reset,
         
         # Admin song management
         tester.test_admin_get_songs,

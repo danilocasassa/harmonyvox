@@ -43,12 +43,20 @@ api_router = APIRouter(prefix="/api")
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
+# ============ PLAN CONFIG ============
+PLAN_CONFIG = {
+    'monthly': {'label': 'Mensal', 'days': 30, 'multiplier': 1},
+    'semester': {'label': 'Semestral', 'days': 180, 'multiplier': 6},
+    'annual': {'label': 'Anual', 'days': 365, 'multiplier': 12},
+}
+
 # ============ MODELS ============
 
 class UserCreate(BaseModel):
     name: str
     email: EmailStr
     password: str
+    plan_type: str = "monthly"
 
 class UserLogin(BaseModel):
     email: EmailStr
@@ -70,15 +78,25 @@ class AdminUserCreate(BaseModel):
     email: EmailStr
     password: str
     role: str = "user"
+    plan_type: str = "monthly"
+    price_locked: Optional[float] = None
 
 class AdminUserUpdate(BaseModel):
     name: Optional[str] = None
     email: Optional[str] = None
     is_active: Optional[bool] = None
     activation_date: Optional[str] = None
+    subscription_expires: Optional[str] = None
+    price_locked: Optional[float] = None
+    plan_type: Optional[str] = None
 
 class AdminPasswordReset(BaseModel):
-    new_password: str
+    new_password: Optional[str] = None
+    send_email: bool = False
+
+class AdminBatchPricing(BaseModel):
+    new_price: float
+    only_increase: bool = True
 
 class PricingUpdate(BaseModel):
     price: float
@@ -92,8 +110,8 @@ class WarmupCreate(BaseModel):
 class PaymentCreateRequest(BaseModel):
     origin_url: str
 
-class CheckoutStatusRequest(BaseModel):
-    session_id: str
+class AdminActivateUser(BaseModel):
+    subscription_expires: str
 
 # ============ AUTH HELPERS ============
 
@@ -111,21 +129,27 @@ def create_token(user_id: str, role: str) -> str:
     }
     return jwt.encode(payload, JWT_SECRET, algorithm='HS256')
 
-def calc_subscription_expiry(from_date=None):
-    """Se faltam 5 dias ou menos para acabar o mês, dá bônus até o fim do próximo mês."""
+def calc_subscription_expiry(plan_type='monthly', from_date=None):
+    """Calcula expiração. Se faltam < 5 dias no mês, dá bônus até fim do próximo período."""
     now = from_date or datetime.now(timezone.utc)
+    plan = PLAN_CONFIG.get(plan_type, PLAN_CONFIG['monthly'])
     last_day = calendar.monthrange(now.year, now.month)[1]
     days_remaining = last_day - now.day
+
     if days_remaining < 5:
-        # Bônus: vai até o fim do próximo mês
-        if now.month == 12:
-            next_year, next_month = now.year + 1, 1
-        else:
-            next_year, next_month = now.year, now.month + 1
-        last_day_next = calendar.monthrange(next_year, next_month)[1]
-        return datetime(next_year, next_month, last_day_next, 23, 59, 59, tzinfo=timezone.utc)
+        # Bônus: adiciona os dias do plano a partir do fim do mês atual
+        end_of_month = datetime(now.year, now.month, last_day, 23, 59, 59, tzinfo=timezone.utc)
+        return end_of_month + timedelta(days=plan['days'])
     else:
-        return now + timedelta(days=30)
+        return now + timedelta(days=plan['days'])
+
+def calc_plan_amount(base_price, plan_type):
+    """Calcula valor total do plano."""
+    plan = PLAN_CONFIG.get(plan_type, PLAN_CONFIG['monthly'])
+    return round(base_price * plan['multiplier'], 2)
+
+def generate_temp_password():
+    return ''.join(random.choices(string.ascii_letters + string.digits, k=10))
 
 async def get_current_user(request: Request) -> dict:
     auth = request.headers.get('Authorization', '')
@@ -165,6 +189,7 @@ async def startup():
             'role': 'admin',
             'is_active': True,
             'whatsapp': '',
+            'plan_type': None,
             'activation_date': datetime.now(timezone.utc).isoformat(),
             'subscription_expires': None,
             'price_locked': None,
@@ -173,7 +198,6 @@ async def startup():
         await db.users.insert_one(admin)
         logger.info(f"Admin padrão criado: {admin_email}")
 
-    # Init pricing
     pricing = await db.pricing_config.find_one({}, {'_id': 0})
     if not pricing:
         await db.pricing_config.insert_one({
@@ -182,7 +206,6 @@ async def startup():
             'apply_to_all': False,
             'created_at': datetime.now(timezone.utc).isoformat()
         })
-        logger.info("Configuração de preço padrão criada: R$29.90")
 
 # ============ AUTH ROUTES ============
 
@@ -191,8 +214,10 @@ async def register(data: UserCreate):
     existing = await db.users.find_one({'email': data.email}, {'_id': 0})
     if existing:
         raise HTTPException(status_code=400, detail='Email já cadastrado')
+    if data.plan_type not in PLAN_CONFIG:
+        raise HTTPException(status_code=400, detail='Plano inválido')
     pricing = await db.pricing_config.find_one({}, {'_id': 0})
-    current_price = pricing['current_price'] if pricing else 29.90
+    base_price = pricing['current_price'] if pricing else 29.90
     user = {
         'id': str(uuid.uuid4()),
         'name': data.name,
@@ -201,26 +226,17 @@ async def register(data: UserCreate):
         'role': 'user',
         'is_active': True,
         'whatsapp': '',
+        'plan_type': data.plan_type,
         'activation_date': datetime.now(timezone.utc).isoformat(),
-        'subscription_expires': calc_subscription_expiry().isoformat(),
-        'price_locked': current_price,
+        'subscription_expires': calc_subscription_expiry(data.plan_type).isoformat(),
+        'price_locked': base_price,
         'created_at': datetime.now(timezone.utc).isoformat()
     }
     await db.users.insert_one(user)
     token = create_token(user['id'], 'user')
     return {
         'token': token,
-        'user': {
-            'id': user['id'],
-            'name': user['name'],
-            'email': user['email'],
-            'role': user['role'],
-            'is_active': user['is_active'],
-            'whatsapp': user['whatsapp'],
-            'activation_date': user['activation_date'],
-            'subscription_expires': user['subscription_expires'],
-            'price_locked': user['price_locked']
-        }
+        'user': {k: v for k, v in user.items() if k not in ('password_hash', '_id')}
     }
 
 @api_router.post("/auth/login")
@@ -231,7 +247,7 @@ async def login(data: UserLogin):
     if not verify_password(data.password, user['password_hash']):
         raise HTTPException(status_code=401, detail='Credenciais inválidas')
     if not user.get('is_active', True):
-        raise HTTPException(status_code=403, detail='Conta desativada')
+        raise HTTPException(status_code=403, detail='Conta desativada pelo administrador')
     if user.get('role') != 'admin':
         expires = user.get('subscription_expires')
         if expires:
@@ -243,17 +259,7 @@ async def login(data: UserLogin):
     token = create_token(user['id'], user['role'])
     return {
         'token': token,
-        'user': {
-            'id': user['id'],
-            'name': user['name'],
-            'email': user['email'],
-            'role': user['role'],
-            'is_active': user['is_active'],
-            'whatsapp': user.get('whatsapp', ''),
-            'activation_date': user.get('activation_date'),
-            'subscription_expires': user.get('subscription_expires'),
-            'price_locked': user.get('price_locked')
-        }
+        'user': {k: v for k, v in user.items() if k not in ('password_hash', '_id')}
     }
 
 @api_router.post("/auth/admin/login")
@@ -266,12 +272,7 @@ async def admin_login(data: UserLogin):
     token = create_token(user['id'], 'admin')
     return {
         'token': token,
-        'user': {
-            'id': user['id'],
-            'name': user['name'],
-            'email': user['email'],
-            'role': user['role']
-        }
+        'user': {k: v for k, v in user.items() if k not in ('password_hash', '_id')}
     }
 
 @api_router.post("/auth/forgot-password")
@@ -279,7 +280,7 @@ async def forgot_password(data: ForgotPassword):
     user = await db.users.find_one({'email': data.email}, {'_id': 0})
     if not user:
         return {'message': 'Se o email existir, uma nova senha será enviada.'}
-    new_password = ''.join(random.choices(string.ascii_letters + string.digits, k=10))
+    new_password = generate_temp_password()
     hashed = hash_password(new_password)
     await db.users.update_one({'email': data.email}, {'$set': {'password_hash': hashed}})
     try:
@@ -307,17 +308,7 @@ async def forgot_password(data: ForgotPassword):
 
 @api_router.get("/users/me")
 async def get_me(user: dict = Depends(get_current_user)):
-    return {
-        'id': user['id'],
-        'name': user['name'],
-        'email': user['email'],
-        'role': user['role'],
-        'is_active': user['is_active'],
-        'whatsapp': user.get('whatsapp', ''),
-        'activation_date': user.get('activation_date'),
-        'subscription_expires': user.get('subscription_expires'),
-        'price_locked': user.get('price_locked')
-    }
+    return {k: v for k, v in user.items() if k not in ('password_hash', '_id')}
 
 @api_router.put("/users/me")
 async def update_me(data: UserUpdate, user: dict = Depends(get_current_user)):
@@ -338,6 +329,24 @@ async def change_password(data: PasswordChange, user: dict = Depends(get_current
     hashed = hash_password(data.new_password)
     await db.users.update_one({'id': user['id']}, {'$set': {'password_hash': hashed}})
     return {'message': 'Senha alterada com sucesso'}
+
+# ============ PLAN INFO ============
+
+@api_router.get("/plans")
+async def get_plans():
+    pricing = await db.pricing_config.find_one({}, {'_id': 0})
+    base_price = pricing['current_price'] if pricing else 29.90
+    plans = []
+    for key, cfg in PLAN_CONFIG.items():
+        total = round(base_price * cfg['multiplier'], 2)
+        plans.append({
+            'id': key,
+            'label': cfg['label'],
+            'days': cfg['days'],
+            'base_price': base_price,
+            'total_price': total,
+        })
+    return plans
 
 # ============ SONGS ROUTES ============
 
@@ -370,7 +379,6 @@ async def stream_audio(song_id: str, track_index: int, request: Request, user: d
     file_size = file_path.stat().st_size
     content_type = 'audio/mpeg' if str(file_path).endswith('.mp3') else 'audio/wav'
 
-    # Handle range requests for seeking
     range_header = request.headers.get('range')
     if range_header:
         range_start, range_end = 0, file_size - 1
@@ -394,13 +402,10 @@ async def stream_audio(song_id: str, track_index: int, request: Request, user: d
                     yield data
 
         return StreamingResponse(
-            range_generator(),
-            status_code=206,
-            media_type=content_type,
+            range_generator(), status_code=206, media_type=content_type,
             headers={
                 'Content-Range': f'bytes {range_start}-{range_end}/{file_size}',
-                'Accept-Ranges': 'bytes',
-                'Content-Length': str(chunk_size),
+                'Accept-Ranges': 'bytes', 'Content-Length': str(chunk_size),
                 'Content-Disposition': 'inline',
                 'Cache-Control': 'no-store, no-cache, must-revalidate',
                 'X-Content-Type-Options': 'nosniff',
@@ -416,11 +421,9 @@ async def stream_audio(song_id: str, track_index: int, request: Request, user: d
                 yield data
 
     return StreamingResponse(
-        file_generator(),
-        media_type=content_type,
+        file_generator(), media_type=content_type,
         headers={
-            'Content-Length': str(file_size),
-            'Accept-Ranges': 'bytes',
+            'Content-Length': str(file_size), 'Accept-Ranges': 'bytes',
             'Content-Disposition': 'inline',
             'Cache-Control': 'no-store, no-cache, must-revalidate',
             'X-Content-Type-Options': 'nosniff',
@@ -463,13 +466,8 @@ async def stream_warmup(item_id: str, request: Request, user: dict = Depends(get
                 yield data
 
     return StreamingResponse(
-        file_generator(),
-        media_type=content_type,
-        headers={
-            'Content-Length': str(file_size),
-            'Content-Disposition': 'inline',
-            'Cache-Control': 'no-store, no-cache',
-        }
+        file_generator(), media_type=content_type,
+        headers={'Content-Length': str(file_size), 'Content-Disposition': 'inline', 'Cache-Control': 'no-store, no-cache'}
     )
 
 # ============ PAYMENT ROUTES ============
@@ -479,14 +477,18 @@ async def create_payment_session(data: PaymentCreateRequest, request: Request, u
     from emergentintegrations.payments.stripe.checkout import StripeCheckout, CheckoutSessionRequest
     pricing = await db.pricing_config.find_one({}, {'_id': 0})
     user_price = user.get('price_locked')
+    plan_type = user.get('plan_type', 'monthly')
+
     if pricing and pricing.get('apply_to_all'):
-        amount = pricing['current_price']
+        base = pricing['current_price']
     elif user_price is not None:
-        amount = user_price
+        base = user_price
     elif pricing:
-        amount = pricing['current_price']
+        base = pricing['current_price']
     else:
-        amount = 29.90
+        base = 29.90
+
+    amount = calc_plan_amount(base, plan_type)
 
     host_url = data.origin_url.rstrip('/')
     success_url = f"{host_url}/payment/success?session_id={{CHECKOUT_SESSION_ID}}"
@@ -496,28 +498,17 @@ async def create_payment_session(data: PaymentCreateRequest, request: Request, u
     stripe_checkout = StripeCheckout(api_key=STRIPE_API_KEY, webhook_url=webhook_url)
 
     checkout_request = CheckoutSessionRequest(
-        amount=float(amount),
-        currency="brl",
-        success_url=success_url,
-        cancel_url=cancel_url,
-        metadata={
-            'user_id': user['id'],
-            'user_email': user['email'],
-            'plan_type': 'monthly'
-        }
+        amount=float(amount), currency="brl",
+        success_url=success_url, cancel_url=cancel_url,
+        metadata={'user_id': user['id'], 'user_email': user['email'], 'plan_type': plan_type}
     )
     session = await stripe_checkout.create_checkout_session(checkout_request)
 
     await db.payment_transactions.insert_one({
-        'id': str(uuid.uuid4()),
-        'user_id': user['id'],
-        'user_email': user['email'],
-        'session_id': session.session_id,
-        'amount': float(amount),
-        'currency': 'brl',
-        'status': 'initiated',
-        'payment_status': 'pending',
-        'metadata': {'plan_type': 'monthly'},
+        'id': str(uuid.uuid4()), 'user_id': user['id'], 'user_email': user['email'],
+        'session_id': session.session_id, 'amount': float(amount), 'currency': 'brl',
+        'plan_type': plan_type, 'status': 'initiated', 'payment_status': 'pending',
+        'metadata': {'plan_type': plan_type},
         'created_at': datetime.now(timezone.utc).isoformat()
     })
 
@@ -526,12 +517,9 @@ async def create_payment_session(data: PaymentCreateRequest, request: Request, u
 @api_router.get("/payments/status/{session_id}")
 async def get_payment_status(session_id: str, request: Request, user: dict = Depends(get_current_user)):
     from emergentintegrations.payments.stripe.checkout import StripeCheckout
-
     webhook_url = f"{str(request.base_url).rstrip('/')}/api/webhook/stripe"
     stripe_checkout = StripeCheckout(api_key=STRIPE_API_KEY, webhook_url=webhook_url)
-
     status = await stripe_checkout.get_checkout_status(session_id)
-
     tx = await db.payment_transactions.find_one({'session_id': session_id}, {'_id': 0})
 
     if status.payment_status == 'paid' and tx and tx.get('payment_status') != 'paid':
@@ -539,7 +527,8 @@ async def get_payment_status(session_id: str, request: Request, user: dict = Dep
             {'session_id': session_id},
             {'$set': {'status': 'complete', 'payment_status': 'paid', 'paid_at': datetime.now(timezone.utc).isoformat()}}
         )
-        new_expiry = calc_subscription_expiry().isoformat()
+        plan_type = tx.get('plan_type', user.get('plan_type', 'monthly'))
+        new_expiry = calc_subscription_expiry(plan_type).isoformat()
         await db.users.update_one(
             {'id': user['id']},
             {'$set': {'subscription_expires': new_expiry, 'is_active': True}}
@@ -551,10 +540,8 @@ async def get_payment_status(session_id: str, request: Request, user: dict = Dep
         )
 
     return {
-        'status': status.status,
-        'payment_status': status.payment_status,
-        'amount_total': status.amount_total,
-        'currency': status.currency
+        'status': status.status, 'payment_status': status.payment_status,
+        'amount_total': status.amount_total, 'currency': status.currency
     }
 
 @api_router.post("/webhook/stripe")
@@ -574,8 +561,9 @@ async def stripe_webhook(request: Request):
                     {'$set': {'status': 'complete', 'payment_status': 'paid', 'paid_at': datetime.now(timezone.utc).isoformat()}}
                 )
                 user_id = tx.get('user_id') or (webhook_response.metadata or {}).get('user_id')
+                plan_type = tx.get('plan_type', 'monthly')
                 if user_id:
-                    new_expiry = calc_subscription_expiry().isoformat()
+                    new_expiry = calc_subscription_expiry(plan_type).isoformat()
                     await db.users.update_one(
                         {'id': user_id},
                         {'$set': {'subscription_expires': new_expiry, 'is_active': True}}
@@ -605,27 +593,19 @@ async def admin_dashboard(admin: dict = Depends(get_admin_user)):
     total_users = await db.users.count_documents({'role': 'user'})
     active_users = await db.users.count_documents({'role': 'user', 'is_active': True})
     inactive_users = total_users - active_users
-    expired_users_cursor = db.users.find(
-        {'role': 'user', 'subscription_expires': {'$lt': datetime.now(timezone.utc).isoformat()}},
-        {'_id': 0, 'email': 1, 'name': 1, 'subscription_expires': 1}
-    )
-    expired_users = await expired_users_cursor.to_list(1000)
     inactive_list = await db.users.find(
         {'role': 'user', 'is_active': False},
         {'_id': 0, 'email': 1, 'name': 1, 'id': 1}
     ).to_list(1000)
     total_warmup = await db.warmup_content.count_documents({})
     return {
-        'total_songs': total_songs,
-        'total_users': total_users,
-        'active_users': active_users,
-        'inactive_users': inactive_users,
-        'expired_users': expired_users,
-        'inactive_user_list': inactive_list,
-        'total_warmup': total_warmup
+        'total_songs': total_songs, 'total_users': total_users,
+        'active_users': active_users, 'inactive_users': inactive_users,
+        'inactive_user_list': inactive_list, 'total_warmup': total_warmup
     }
 
-# Admin Users
+# ---- Admin Users ----
+
 @api_router.get("/admin/users")
 async def admin_get_users(admin: dict = Depends(get_admin_user)):
     users = await db.users.find({}, {'_id': 0, 'password_hash': 0}).sort('name', 1).to_list(1000)
@@ -637,7 +617,8 @@ async def admin_create_user(data: AdminUserCreate, admin: dict = Depends(get_adm
     if existing:
         raise HTTPException(status_code=400, detail='Email já cadastrado')
     pricing = await db.pricing_config.find_one({}, {'_id': 0})
-    current_price = pricing['current_price'] if pricing else 29.90
+    base_price = data.price_locked if data.price_locked is not None else (pricing['current_price'] if pricing else 29.90)
+    plan = data.plan_type if data.plan_type in PLAN_CONFIG else 'monthly'
     user = {
         'id': str(uuid.uuid4()),
         'name': data.name,
@@ -646,9 +627,10 @@ async def admin_create_user(data: AdminUserCreate, admin: dict = Depends(get_adm
         'role': data.role,
         'is_active': True,
         'whatsapp': '',
+        'plan_type': plan if data.role == 'user' else None,
         'activation_date': datetime.now(timezone.utc).isoformat(),
-        'subscription_expires': calc_subscription_expiry().isoformat() if data.role == 'user' else None,
-        'price_locked': current_price if data.role == 'user' else None,
+        'subscription_expires': calc_subscription_expiry(plan).isoformat() if data.role == 'user' else None,
+        'price_locked': base_price if data.role == 'user' else None,
         'created_at': datetime.now(timezone.utc).isoformat()
     }
     await db.users.insert_one(user)
@@ -665,6 +647,12 @@ async def admin_update_user(user_id: str, data: AdminUserUpdate, admin: dict = D
         update_fields['is_active'] = data.is_active
     if data.activation_date is not None:
         update_fields['activation_date'] = data.activation_date
+    if data.subscription_expires is not None:
+        update_fields['subscription_expires'] = data.subscription_expires
+    if data.price_locked is not None:
+        update_fields['price_locked'] = data.price_locked
+    if data.plan_type is not None:
+        update_fields['plan_type'] = data.plan_type
     if update_fields:
         await db.users.update_one({'id': user_id}, {'$set': update_fields})
     updated = await db.users.find_one({'id': user_id}, {'_id': 0, 'password_hash': 0})
@@ -672,12 +660,57 @@ async def admin_update_user(user_id: str, data: AdminUserUpdate, admin: dict = D
         raise HTTPException(status_code=404, detail='Usuário não encontrado')
     return updated
 
+@api_router.post("/admin/users/{user_id}/activate")
+async def admin_activate_user(user_id: str, data: AdminActivateUser, admin: dict = Depends(get_admin_user)):
+    """Ativa um usuário com data de expiração específica."""
+    await db.users.update_one(
+        {'id': user_id},
+        {'$set': {'is_active': True, 'subscription_expires': data.subscription_expires}}
+    )
+    updated = await db.users.find_one({'id': user_id}, {'_id': 0, 'password_hash': 0})
+    if not updated:
+        raise HTTPException(status_code=404, detail='Usuário não encontrado')
+    return updated
+
 @api_router.put("/admin/users/{user_id}/password")
 async def admin_reset_password(user_id: str, data: AdminPasswordReset, admin: dict = Depends(get_admin_user)):
-    hashed = hash_password(data.new_password)
-    result = await db.users.update_one({'id': user_id}, {'$set': {'password_hash': hashed}})
-    if result.matched_count == 0:
+    user = await db.users.find_one({'id': user_id}, {'_id': 0})
+    if not user:
         raise HTTPException(status_code=404, detail='Usuário não encontrado')
+
+    if data.send_email:
+        new_pw = generate_temp_password()
+    elif data.new_password:
+        new_pw = data.new_password
+    else:
+        raise HTTPException(status_code=400, detail='Informe uma senha ou marque envio por email')
+
+    hashed = hash_password(new_pw)
+    await db.users.update_one({'id': user_id}, {'$set': {'password_hash': hashed}})
+
+    if data.send_email:
+        try:
+            params = {
+                "from": SENDER_EMAIL,
+                "to": [user['email']],
+                "subject": "Vocal Layers - Nova Senha",
+                "html": f"""
+                <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 20px;">
+                    <h2 style="color: #FFD700;">Vocal Layers</h2>
+                    <p>Olá {user['name']}, sua nova senha é:</p>
+                    <div style="background: #1a1a2e; color: #FFD700; padding: 15px; border-radius: 8px; font-size: 20px; text-align: center; font-family: monospace;">
+                        {new_pw}
+                    </div>
+                    <p style="color: #888; margin-top: 15px;">Recomendamos que altere sua senha após fazer login.</p>
+                </div>
+                """
+            }
+            await asyncio.to_thread(resend.Emails.send, params)
+            return {'message': f'Senha temporária enviada para {user["email"]}'}
+        except Exception as e:
+            logger.error(f"Erro email: {e}")
+            return {'message': f'Senha alterada, mas falha ao enviar email. Senha: {new_pw}'}
+
     return {'message': 'Senha alterada com sucesso'}
 
 @api_router.delete("/admin/users/{user_id}")
@@ -687,7 +720,29 @@ async def admin_delete_user(user_id: str, admin: dict = Depends(get_admin_user))
         raise HTTPException(status_code=404, detail='Usuário não encontrado')
     return {'message': 'Usuário removido'}
 
-# Admin Songs
+@api_router.post("/admin/users/batch-pricing")
+async def admin_batch_pricing(data: AdminBatchPricing, admin: dict = Depends(get_admin_user)):
+    """Atualiza preço em lote. Se only_increase=True, só sobe para quem tem valor menor."""
+    if data.only_increase:
+        result = await db.users.update_many(
+            {'role': 'user', 'price_locked': {'$lt': data.new_price}},
+            {'$set': {'price_locked': data.new_price}}
+        )
+    else:
+        result = await db.users.update_many(
+            {'role': 'user'},
+            {'$set': {'price_locked': data.new_price}}
+        )
+    # Also update the global pricing config
+    await db.pricing_config.update_one(
+        {},
+        {'$set': {'current_price': data.new_price, 'updated_at': datetime.now(timezone.utc).isoformat()}},
+        upsert=True
+    )
+    return {'message': f'{result.modified_count} usuários atualizados para R$ {data.new_price:.2f}'}
+
+# ---- Admin Songs ----
+
 @api_router.get("/admin/songs")
 async def admin_get_songs(admin: dict = Depends(get_admin_user)):
     songs = await db.songs.find({}, {'_id': 0}).sort('title', 1).to_list(1000)
@@ -696,11 +751,8 @@ async def admin_get_songs(admin: dict = Depends(get_admin_user)):
 @api_router.post("/admin/songs")
 async def admin_create_song(title: str = Form(...), artist: str = Form(""), admin: dict = Depends(get_admin_user)):
     song = {
-        'id': str(uuid.uuid4()),
-        'title': title,
-        'artist': artist,
-        'tracks': [],
-        'created_at': datetime.now(timezone.utc).isoformat()
+        'id': str(uuid.uuid4()), 'title': title, 'artist': artist,
+        'tracks': [], 'created_at': datetime.now(timezone.utc).isoformat()
     }
     await db.songs.insert_one(song)
     return {k: v for k, v in song.items() if k != '_id'}
@@ -727,29 +779,23 @@ async def admin_delete_song(song_id: str, admin: dict = Depends(get_admin_user))
 
 @api_router.post("/admin/songs/{song_id}/tracks")
 async def admin_add_track(
-    song_id: str,
-    track_name: str = Form(...),
-    track_type: str = Form(...),
-    file: UploadFile = File(...),
-    admin: dict = Depends(get_admin_user)
+    song_id: str, track_name: str = Form(...), track_type: str = Form(...),
+    file: UploadFile = File(...), admin: dict = Depends(get_admin_user)
 ):
     song = await db.songs.find_one({'id': song_id}, {'_id': 0})
     if not song:
         raise HTTPException(status_code=404, detail='Música não encontrada')
     ext = Path(file.filename).suffix.lower()
     if ext not in ('.mp3', '.wav'):
-        raise HTTPException(status_code=400, detail='Formato não suportado. Use MP3 ou WAV.')
+        raise HTTPException(status_code=400, detail='Use MP3 ou WAV.')
     file_id = str(uuid.uuid4())
     file_path = UPLOAD_DIR / f"{file_id}{ext}"
     async with aiofiles.open(file_path, 'wb') as f:
         content = await file.read()
         await f.write(content)
     track = {
-        'name': track_name,
-        'type': track_type,
-        'file_path': str(file_path),
-        'file_ext': ext,
-        'uploaded_at': datetime.now(timezone.utc).isoformat()
+        'name': track_name, 'type': track_type, 'file_path': str(file_path),
+        'file_ext': ext, 'uploaded_at': datetime.now(timezone.utc).isoformat()
     }
     await db.songs.update_one({'id': song_id}, {'$push': {'tracks': track}})
     updated = await db.songs.find_one({'id': song_id}, {'_id': 0})
@@ -772,7 +818,8 @@ async def admin_delete_track(song_id: str, track_index: int, admin: dict = Depen
     updated = await db.songs.find_one({'id': song_id}, {'_id': 0})
     return updated
 
-# Admin Warmup
+# ---- Admin Warmup ----
+
 @api_router.get("/admin/warmup")
 async def admin_get_warmup(admin: dict = Depends(get_admin_user)):
     items = await db.warmup_content.find({}, {'_id': 0}).to_list(100)
@@ -780,28 +827,21 @@ async def admin_get_warmup(admin: dict = Depends(get_admin_user)):
 
 @api_router.post("/admin/warmup")
 async def admin_create_warmup(
-    title: str = Form(...),
-    description: str = Form(""),
-    content_type: str = Form("audio"),
-    file: UploadFile = File(...),
-    admin: dict = Depends(get_admin_user)
+    title: str = Form(...), description: str = Form(""), content_type: str = Form("audio"),
+    file: UploadFile = File(...), admin: dict = Depends(get_admin_user)
 ):
     ext = Path(file.filename).suffix.lower()
     allowed = ('.mp3', '.wav', '.mp4', '.webm')
     if ext not in allowed:
-        raise HTTPException(status_code=400, detail=f'Formato não suportado. Use: {", ".join(allowed)}')
+        raise HTTPException(status_code=400, detail=f'Use: {", ".join(allowed)}')
     file_id = str(uuid.uuid4())
     file_path = UPLOAD_DIR / f"warmup_{file_id}{ext}"
     async with aiofiles.open(file_path, 'wb') as f:
         content = await file.read()
         await f.write(content)
     item = {
-        'id': str(uuid.uuid4()),
-        'title': title,
-        'description': description,
-        'content_type': content_type,
-        'file_path': str(file_path),
-        'file_ext': ext,
+        'id': str(uuid.uuid4()), 'title': title, 'description': description,
+        'content_type': content_type, 'file_path': str(file_path), 'file_ext': ext,
         'created_at': datetime.now(timezone.utc).isoformat()
     }
     await db.warmup_content.insert_one(item)
@@ -818,7 +858,8 @@ async def admin_delete_warmup(item_id: str, admin: dict = Depends(get_admin_user
     await db.warmup_content.delete_one({'id': item_id})
     return {'message': 'Conteúdo removido'}
 
-# Admin Pricing
+# ---- Admin Pricing ----
+
 @api_router.get("/admin/pricing")
 async def admin_get_pricing(admin: dict = Depends(get_admin_user)):
     pricing = await db.pricing_config.find_one({}, {'_id': 0})
@@ -826,20 +867,13 @@ async def admin_get_pricing(admin: dict = Depends(get_admin_user)):
 
 @api_router.put("/admin/pricing")
 async def admin_update_pricing(data: PricingUpdate, admin: dict = Depends(get_admin_user)):
-    old_pricing = await db.pricing_config.find_one({}, {'_id': 0})
     await db.pricing_config.update_one(
         {},
         {'$set': {'current_price': data.price, 'apply_to_all': data.apply_to_all, 'updated_at': datetime.now(timezone.utc).isoformat()}},
         upsert=True
     )
     if data.apply_to_all:
-        await db.users.update_many(
-            {'role': 'user'},
-            {'$set': {'price_locked': data.price}}
-        )
-        logger.info(f"Preço atualizado para TODOS os usuários: R${data.price}")
-    else:
-        logger.info(f"Preço atualizado apenas para NOVOS usuários: R${data.price}")
+        await db.users.update_many({'role': 'user'}, {'$set': {'price_locked': data.price}})
     return {'message': 'Preço atualizado', 'current_price': data.price, 'apply_to_all': data.apply_to_all}
 
 # Include router

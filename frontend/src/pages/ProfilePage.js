@@ -169,6 +169,12 @@ export default function ProfilePage() {
                 <p className="font-semibold" style={{ color: '#FFD700' }}>R$ {user?.price_locked?.toFixed(2) || '29.90'}</p>
               </div>
               <div className="p-4 rounded-lg" style={{ background: 'rgba(255,255,255,0.03)' }}>
+                <p className="text-xs mb-1" style={{ color: '#475569' }}>Plano</p>
+                <p className="font-semibold" style={{ color: '#f8fafc' }}>
+                  {{ monthly: 'Mensal', semester: 'Semestral', annual: 'Anual' }[user?.plan_type] || 'Mensal'}
+                </p>
+              </div>
+              <div className="p-4 rounded-lg col-span-2" style={{ background: 'rgba(255,255,255,0.03)' }}>
                 <p className="text-xs mb-1" style={{ color: '#475569' }}>Status</p>
                 <p className="font-semibold" style={{ color: user?.is_active ? '#22c55e' : '#ef4444' }}>
                   {user?.is_active ? 'Ativo' : 'Inativo'}

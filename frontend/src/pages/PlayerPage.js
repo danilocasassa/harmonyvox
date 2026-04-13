@@ -8,12 +8,8 @@ import { Play, Pause, ArrowLeft, Volume2, VolumeX, RotateCcw } from 'lucide-reac
 const API = process.env.REACT_APP_BACKEND_URL + '/api';
 
 const TRACK_COLORS = {
-  soprano: '#FF6B9D',
-  contralto: '#C084FC',
-  tenor: '#38BDF8',
-  baritono: '#34D399',
-  base: '#FFD700',
-  default: '#94A3B8'
+  soprano: '#FF6B9D', contralto: '#C084FC', tenor: '#38BDF8',
+  baritono: '#34D399', base: '#FFD700', default: '#94A3B8'
 };
 
 function getTrackColor(type) {
@@ -64,8 +60,6 @@ export default function PlayerPage() {
       audioRefs.current = new Array(data.tracks.length).fill(null);
       blobUrls.current = new Array(data.tracks.length).fill(null);
       setLoading(false);
-
-      // Load all audio blobs in parallel
       if (data.tracks.length > 0) {
         setAudioLoading(true);
         await loadAllAudio(data.tracks);
@@ -87,31 +81,22 @@ export default function PlayerPage() {
         const blob = await res.blob();
         const url = URL.createObjectURL(blob);
         blobUrls.current[index] = url;
-
         const audio = new Audio();
         audio.preload = 'auto';
         audio.src = url;
         audioRefs.current[index] = audio;
-
         return new Promise((resolve) => {
-          audio.onloadedmetadata = () => {
-            resolve(audio.duration);
-          };
+          audio.onloadedmetadata = () => resolve(audio.duration);
           audio.onerror = () => resolve(0);
-          // Timeout fallback
           setTimeout(() => resolve(audio.duration || 0), 5000);
         });
       } catch (err) {
-        console.error(`Error loading track ${index}:`, err);
         return 0;
       }
     });
-
     const durations = await Promise.all(promises);
     const maxDuration = Math.max(...durations.filter(d => d > 0));
     if (maxDuration > 0) setDuration(maxDuration);
-
-    // Set up ended handler on first audio
     const firstAudio = audioRefs.current.find(a => a);
     if (firstAudio) {
       firstAudio.onended = () => {
@@ -124,31 +109,32 @@ export default function PlayerPage() {
   const updateTime = useCallback(() => {
     if (!isSeekingRef.current) {
       const audio = audioRefs.current.find(a => a && !a.paused);
-      if (audio) {
-        setCurrentTime(audio.currentTime);
-      }
+      if (audio) setCurrentTime(audio.currentTime);
     }
     animationRef.current = requestAnimationFrame(updateTime);
   }, []);
 
-  const applySoloMute = useCallback(() => {
-    const hasSolo = trackStates.some(t => t.solo);
+  // Apply volume/mute/solo to all audio elements
+  const applyAudioStates = useCallback((states) => {
+    const hasSolo = states.some(t => t.solo);
     audioRefs.current.forEach((audio, i) => {
       if (!audio) return;
-      const state = trackStates[i];
+      const state = states[i];
+      if (!state) return;
       if (hasSolo) {
+        audio.muted = !state.solo;
         audio.volume = state.solo ? state.volume : 0;
-        audio.muted = state.solo ? false : true;
       } else {
-        audio.volume = state.muted ? 0 : state.volume;
         audio.muted = state.muted;
+        audio.volume = state.muted ? 0 : state.volume;
       }
     });
-  }, [trackStates]);
+  }, []);
 
+  // Apply whenever trackStates changes
   useEffect(() => {
-    applySoloMute();
-  }, [trackStates, applySoloMute]);
+    applyAudioStates(trackStates);
+  }, [trackStates, applyAudioStates]);
 
   const togglePlay = async () => {
     if (isPlaying) {
@@ -156,7 +142,7 @@ export default function PlayerPage() {
       setIsPlaying(false);
       if (animationRef.current) cancelAnimationFrame(animationRef.current);
     } else {
-      applySoloMute();
+      applyAudioStates(trackStates);
       const playPromises = audioRefs.current.map(a => {
         if (a) return a.play().catch(() => {});
         return Promise.resolve();
@@ -176,22 +162,58 @@ export default function PlayerPage() {
   };
 
   const handleVolumeChange = (index, value) => {
-    setTrackStates(prev => prev.map((t, i) => i === index ? { ...t, volume: value } : t));
+    // Immediately apply volume to the audio element
+    const audio = audioRefs.current[index];
+    if (audio) {
+      audio.volume = value;
+      audio.muted = false;
+    }
+    setTrackStates(prev => prev.map((t, i) =>
+      i === index ? { ...t, volume: value, muted: false } : t
+    ));
   };
 
   const toggleMute = (index) => {
-    setTrackStates(prev => prev.map((t, i) => i === index ? { ...t, muted: !t.muted, solo: false } : t));
+    const current = trackStates[index];
+    const newMuted = !current.muted;
+    const audio = audioRefs.current[index];
+    if (audio) {
+      audio.muted = newMuted;
+      audio.volume = newMuted ? 0 : current.volume;
+    }
+    setTrackStates(prev => prev.map((t, i) =>
+      i === index ? { ...t, muted: newMuted, solo: false } : t
+    ));
   };
 
   const toggleSolo = (index) => {
-    setTrackStates(prev => prev.map((t, i) => {
-      if (i === index) return { ...t, solo: !t.solo, muted: false };
-      return { ...t, solo: false };
-    }));
+    setTrackStates(prev => {
+      const newStates = prev.map((t, i) => {
+        if (i === index) return { ...t, solo: !t.solo, muted: false };
+        return { ...t, solo: false };
+      });
+      // Immediately apply
+      const hasSolo = newStates.some(t => t.solo);
+      audioRefs.current.forEach((audio, i) => {
+        if (!audio) return;
+        const s = newStates[i];
+        if (hasSolo) {
+          audio.muted = !s.solo;
+          audio.volume = s.solo ? s.volume : 0;
+        } else {
+          audio.muted = s.muted;
+          audio.volume = s.muted ? 0 : s.volume;
+        }
+      });
+      return newStates;
+    });
   };
 
   const resetAll = () => {
-    setTrackStates(prev => prev.map(t => ({ ...t, volume: 1, muted: false, solo: false })));
+    audioRefs.current.forEach((audio) => {
+      if (audio) { audio.volume = 1; audio.muted = false; }
+    });
+    setTrackStates(prev => prev.map(() => ({ volume: 1, muted: false, solo: false })));
   };
 
   const formatTime = (s) => {
@@ -201,7 +223,6 @@ export default function PlayerPage() {
     return `${m}:${sec.toString().padStart(2, '0')}`;
   };
 
-  // Prevent right-click on the entire player page
   useEffect(() => {
     const handler = (e) => e.preventDefault();
     document.addEventListener('contextmenu', handler);
@@ -218,37 +239,33 @@ export default function PlayerPage() {
       </div>
     );
   }
-
   if (!song) return null;
 
   return (
     <div className="min-h-screen" style={{ background: '#02040a' }} onContextMenu={(e) => e.preventDefault()}>
-      {/* Header */}
       <header className="border-b" style={{ borderColor: 'rgba(255,255,255,0.05)', background: 'rgba(2,4,10,0.9)', backdropFilter: 'blur(12px)' }}>
-        <div className="max-w-4xl mx-auto px-6 py-4 flex items-center gap-4">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4 flex items-center gap-4">
           <button onClick={() => navigate('/')} data-testid="player-back-button" className="p-2 rounded-lg hover:bg-white/5 transition-colors" style={{ color: '#94a3b8' }}>
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div>
-            <h1 className="text-xl font-bold" style={{ fontFamily: 'Playfair Display, serif', color: '#f8fafc' }}>{song.title}</h1>
+            <h1 className="text-lg sm:text-xl font-bold" style={{ fontFamily: 'Playfair Display, serif', color: '#f8fafc' }}>{song.title}</h1>
             {song.artist && <p className="text-sm" style={{ color: '#94a3b8' }}>{song.artist}</p>}
           </div>
         </div>
       </header>
 
-      <main className="max-w-4xl mx-auto px-6 py-8 pb-40">
-        {/* Audio loading indicator */}
+      <main className="max-w-4xl mx-auto px-4 sm:px-6 py-6 pb-44">
         {audioLoading && (
           <div className="mb-4 p-3 rounded-lg flex items-center gap-3" style={{ background: 'rgba(255,215,0,0.05)', border: '1px solid rgba(255,215,0,0.1)' }}>
             <div className="animate-spin w-4 h-4 border-2 border-t-transparent rounded-full" style={{ borderColor: '#FFD700', borderTopColor: 'transparent' }} />
-            <span className="text-sm" style={{ color: '#FFD700' }}>Carregando faixas de áudio...</span>
+            <span className="text-sm" style={{ color: '#FFD700' }}>Carregando faixas...</span>
           </div>
         )}
 
-        {/* Track Lanes */}
         <div className="space-y-3 mb-8">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold" style={{ fontFamily: 'Playfair Display, serif', color: '#f8fafc' }}>Faixas</h2>
+            <h2 className="text-base sm:text-lg font-semibold" style={{ fontFamily: 'Playfair Display, serif', color: '#f8fafc' }}>Faixas</h2>
             <Button variant="ghost" size="sm" onClick={resetAll} data-testid="reset-all-button" className="text-xs" style={{ color: '#94a3b8' }}>
               <RotateCcw className="w-3 h-3 mr-1" /> Resetar
             </Button>
@@ -262,7 +279,7 @@ export default function PlayerPage() {
               <div
                 key={i}
                 data-testid={`track-lane-${i}`}
-                className="track-lane flex items-center gap-4 p-4 rounded-xl"
+                className="track-lane flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 p-4 rounded-xl"
                 style={{
                   background: isActive ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.01)',
                   border: `1px solid ${isActive ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.03)'}`,
@@ -270,58 +287,48 @@ export default function PlayerPage() {
                   transition: 'all 0.3s ease-out'
                 }}
               >
-                {/* Track color indicator */}
-                <div className="w-1 h-10 rounded-full flex-shrink-0" style={{ background: color }} />
-                {/* Track name */}
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-sm truncate" style={{ color: '#f8fafc' }}>{track.name}</p>
-                  <p className="text-xs" style={{ color: '#475569' }}>{track.type}</p>
+                <div className="flex items-center gap-3 flex-1 min-w-0">
+                  <div className="w-1 h-10 rounded-full flex-shrink-0" style={{ background: color }} />
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-sm truncate" style={{ color: '#f8fafc' }}>{track.name}</p>
+                    <p className="text-xs" style={{ color: '#475569' }}>{track.type}</p>
+                  </div>
+                  <div className="flex items-center gap-1 sm:gap-2">
+                    <button data-testid={`track-solo-${i}`} onClick={() => toggleSolo(i)}
+                      className="px-2.5 py-1.5 rounded text-xs font-bold uppercase tracking-wider transition-all"
+                      style={{
+                        border: `1px solid ${state.solo ? '#FFD700' : 'rgba(255,215,0,0.3)'}`,
+                        background: state.solo ? '#FFD700' : 'transparent',
+                        color: state.solo ? '#000' : '#FFD700',
+                      }}>S</button>
+                    <button data-testid={`track-mute-${i}`} onClick={() => toggleMute(i)}
+                      className="px-2.5 py-1.5 rounded text-xs font-bold uppercase tracking-wider transition-all"
+                      style={{
+                        border: `1px solid ${state.muted ? '#ef4444' : 'rgba(239,68,68,0.3)'}`,
+                        background: state.muted ? '#ef4444' : 'transparent',
+                        color: state.muted ? '#fff' : '#ef4444',
+                      }}>M</button>
+                  </div>
                 </div>
-                {/* Solo button */}
-                <button
-                  data-testid={`track-solo-${i}`}
-                  onClick={() => toggleSolo(i)}
-                  className="px-3 py-1.5 rounded text-xs font-bold uppercase tracking-wider transition-all"
-                  style={{
-                    border: `1px solid ${state.solo ? '#FFD700' : 'rgba(255,215,0,0.3)'}`,
-                    background: state.solo ? '#FFD700' : 'transparent',
-                    color: state.solo ? '#000' : '#FFD700',
-                  }}
-                >
-                  S
-                </button>
-                {/* Mute button */}
-                <button
-                  data-testid={`track-mute-${i}`}
-                  onClick={() => toggleMute(i)}
-                  className="px-3 py-1.5 rounded text-xs font-bold uppercase tracking-wider transition-all"
-                  style={{
-                    border: `1px solid ${state.muted ? '#ef4444' : 'rgba(239,68,68,0.3)'}`,
-                    background: state.muted ? '#ef4444' : 'transparent',
-                    color: state.muted ? '#fff' : '#ef4444',
-                  }}
-                >
-                  M
-                </button>
-                {/* Volume */}
-                <div className="flex items-center gap-2 w-32">
+                {/* Volume slider - full width on mobile */}
+                <div className="flex items-center gap-2 w-full sm:w-36">
                   <button onClick={() => toggleMute(i)} className="flex-shrink-0">
                     {state.muted || (hasSolo && !state.solo)
                       ? <VolumeX className="w-4 h-4" style={{ color: '#ef4444' }} />
-                      : <Volume2 className="w-4 h-4" style={{ color }} />
-                    }
+                      : <Volume2 className="w-4 h-4" style={{ color }} />}
                   </button>
                   <input
                     type="range"
                     data-testid={`track-volume-${i}`}
-                    min="0"
-                    max="1"
-                    step="0.01"
+                    min="0" max="1" step="0.01"
                     value={state.volume}
                     onChange={(e) => handleVolumeChange(i, parseFloat(e.target.value))}
                     className="w-full"
                     style={{ accentColor: color }}
                   />
+                  <span className="text-xs w-8 text-right tabular-nums" style={{ color: '#94a3b8' }}>
+                    {Math.round(state.volume * 100)}
+                  </span>
                 </div>
               </div>
             );
@@ -335,35 +342,19 @@ export default function PlayerPage() {
         )}
       </main>
 
-      {/* Fixed Player Bar */}
       {song.tracks.length > 0 && (
         <div className="fixed bottom-0 left-0 right-0 z-50" style={{ background: '#050508', borderTop: '1px solid rgba(255,255,255,0.08)', boxShadow: '0 -10px 40px rgba(0,0,0,0.5)' }}>
-          <div className="max-w-4xl mx-auto px-6 py-4">
-            {/* Progress bar */}
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4">
             <div className="flex items-center gap-3 mb-3">
-              <span className="text-xs font-mono w-12 text-right" style={{ color: '#94a3b8' }}>{formatTime(currentTime)}</span>
-              <input
-                type="range"
-                data-testid="player-seek-bar"
-                min="0"
-                max={duration || 0}
-                step="0.1"
-                value={currentTime}
-                onChange={handleSeek}
-                className="flex-1"
-                style={{ accentColor: '#FFD700' }}
-              />
-              <span className="text-xs font-mono w-12" style={{ color: '#94a3b8' }}>{formatTime(duration)}</span>
+              <span className="text-xs font-mono w-10 text-right" style={{ color: '#94a3b8' }}>{formatTime(currentTime)}</span>
+              <input type="range" data-testid="player-seek-bar" min="0" max={duration || 0} step="0.1"
+                value={currentTime} onChange={handleSeek} className="flex-1" style={{ accentColor: '#FFD700' }} />
+              <span className="text-xs font-mono w-10" style={{ color: '#94a3b8' }}>{formatTime(duration)}</span>
             </div>
-            {/* Controls */}
-            <div className="flex items-center justify-center gap-4">
-              <Button
-                data-testid="player-play-button"
-                onClick={togglePlay}
-                disabled={audioLoading}
+            <div className="flex items-center justify-center">
+              <Button data-testid="player-play-button" onClick={togglePlay} disabled={audioLoading}
                 className="w-14 h-14 rounded-full flex items-center justify-center text-black disabled:opacity-50"
-                style={{ background: '#FFD700', boxShadow: '0 0 20px rgba(255,215,0,0.3)' }}
-              >
+                style={{ background: '#FFD700', boxShadow: '0 0 20px rgba(255,215,0,0.3)' }}>
                 {isPlaying ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6 ml-0.5" />}
               </Button>
             </div>
