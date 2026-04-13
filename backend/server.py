@@ -598,11 +598,92 @@ async def admin_dashboard(admin: dict = Depends(get_admin_user)):
         {'_id': 0, 'email': 1, 'name': 1, 'id': 1}
     ).to_list(1000)
     total_warmup = await db.warmup_content.count_documents({})
+
+    # Métricas por plano
+    now = datetime.now(timezone.utc).isoformat()
+    plan_metrics = {}
+    for plan_key in PLAN_CONFIG:
+        total = await db.users.count_documents({'role': 'user', 'plan_type': plan_key})
+        active = await db.users.count_documents({'role': 'user', 'plan_type': plan_key, 'is_active': True, 'subscription_expires': {'$gte': now}})
+        expired = total - active
+        plan_metrics[plan_key] = {'total': total, 'active': active, 'expired': expired, 'label': PLAN_CONFIG[plan_key]['label']}
+
+    # Usuários prestes a expirar (próximos 7 dias)
+    soon = (datetime.now(timezone.utc) + timedelta(days=7)).isoformat()
+    expiring_soon = await db.users.find(
+        {'role': 'user', 'is_active': True, 'subscription_expires': {'$gte': now, '$lte': soon}},
+        {'_id': 0, 'id': 1, 'name': 1, 'email': 1, 'subscription_expires': 1, 'plan_type': 1, 'price_locked': 1}
+    ).to_list(1000)
+
+    # Receita: soma dos pagamentos confirmados
+    paid_txs = await db.payment_transactions.find({'payment_status': 'paid'}, {'_id': 0, 'amount': 1, 'plan_type': 1, 'created_at': 1}).to_list(5000)
+    total_revenue = sum(tx.get('amount', 0) for tx in paid_txs)
+    revenue_by_plan = {}
+    for tx in paid_txs:
+        pt = tx.get('plan_type', 'monthly')
+        revenue_by_plan[pt] = revenue_by_plan.get(pt, 0) + tx.get('amount', 0)
+
+    # Total pagamentos
+    total_payments = await db.payment_transactions.count_documents({'payment_status': 'paid'})
+
     return {
         'total_songs': total_songs, 'total_users': total_users,
         'active_users': active_users, 'inactive_users': inactive_users,
-        'inactive_user_list': inactive_list, 'total_warmup': total_warmup
+        'inactive_user_list': inactive_list, 'total_warmup': total_warmup,
+        'plan_metrics': plan_metrics,
+        'expiring_soon': expiring_soon,
+        'total_revenue': round(total_revenue, 2),
+        'revenue_by_plan': {k: round(v, 2) for k, v in revenue_by_plan.items()},
+        'total_payments': total_payments,
     }
+
+@api_router.post("/admin/notify-expiring")
+async def admin_notify_expiring(admin: dict = Depends(get_admin_user)):
+    """Envia notificação por email para usuários com assinatura expirando em até 5 dias."""
+    now = datetime.now(timezone.utc).isoformat()
+    soon = (datetime.now(timezone.utc) + timedelta(days=5)).isoformat()
+    expiring = await db.users.find(
+        {'role': 'user', 'is_active': True, 'subscription_expires': {'$gte': now, '$lte': soon}},
+        {'_id': 0, 'id': 1, 'name': 1, 'email': 1, 'subscription_expires': 1, 'plan_type': 1, 'price_locked': 1}
+    ).to_list(1000)
+
+    sent = 0
+    errors = 0
+    for user in expiring:
+        exp_date = user.get('subscription_expires', '')
+        try:
+            exp_formatted = datetime.fromisoformat(exp_date).strftime('%d/%m/%Y') if exp_date else '-'
+        except Exception:
+            exp_formatted = exp_date[:10] if exp_date else '-'
+
+        price = user.get('price_locked', 29.90)
+        plan_label = PLAN_CONFIG.get(user.get('plan_type', 'monthly'), {}).get('label', 'Mensal')
+
+        try:
+            params = {
+                "from": SENDER_EMAIL,
+                "to": [user['email']],
+                "subject": "Vocal Layers - Sua assinatura está expirando!",
+                "html": f"""
+                <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 20px;">
+                    <h2 style="color: #FFD700;">Vocal Layers</h2>
+                    <p>Olá <strong>{user['name']}</strong>,</p>
+                    <p>Sua assinatura do plano <strong>{plan_label}</strong> expira em <strong>{exp_formatted}</strong>.</p>
+                    <div style="background: #1a1a2e; padding: 15px; border-radius: 8px; margin: 15px 0;">
+                        <p style="color: #FFD700; margin: 0; font-size: 16px;">Renove agora por R$ {price:.2f}</p>
+                    </div>
+                    <p>Acesse a plataforma e vá em <strong>Perfil → Assinatura</strong> para renovar.</p>
+                    <p style="color: #888; font-size: 12px; margin-top: 20px;">Não perca acesso às suas faixas vocais!</p>
+                </div>
+                """
+            }
+            await asyncio.to_thread(resend.Emails.send, params)
+            sent += 1
+        except Exception as e:
+            logger.error(f"Erro ao notificar {user['email']}: {e}")
+            errors += 1
+
+    return {'message': f'{sent} notificações enviadas, {errors} erros', 'total_expiring': len(expiring), 'sent': sent, 'errors': errors}
 
 # ---- Admin Users ----
 

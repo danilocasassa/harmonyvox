@@ -214,7 +214,7 @@ class VocalLayersAPITester:
     # ===== ADMIN DASHBOARD TESTS =====
 
     def test_admin_dashboard(self):
-        """Test admin dashboard"""
+        """Test admin dashboard with new metrics"""
         if not self.admin_token:
             print("❌ No admin token available for dashboard test")
             return False
@@ -226,7 +226,78 @@ class VocalLayersAPITester:
             200,
             headers={"Authorization": f"Bearer {self.admin_token}"}
         )
-        return success and 'total_songs' in response and 'total_users' in response
+        
+        if not success:
+            return False
+            
+        # Check for basic fields
+        required_fields = ['total_songs', 'total_users', 'active_users', 'inactive_users']
+        for field in required_fields:
+            if field not in response:
+                print(f"❌ Missing field: {field}")
+                return False
+                
+        # Check for new plan metrics
+        if 'plan_metrics' not in response:
+            print("❌ Missing plan_metrics")
+            return False
+            
+        plan_metrics = response['plan_metrics']
+        expected_plans = ['monthly', 'semester', 'annual']
+        for plan in expected_plans:
+            if plan not in plan_metrics:
+                print(f"❌ Missing plan in plan_metrics: {plan}")
+                return False
+            plan_data = plan_metrics[plan]
+            required_plan_fields = ['total', 'active', 'expired', 'label']
+            for field in required_plan_fields:
+                if field not in plan_data:
+                    print(f"❌ Missing field in {plan} plan: {field}")
+                    return False
+                    
+        # Check for expiring soon
+        if 'expiring_soon' not in response:
+            print("❌ Missing expiring_soon")
+            return False
+            
+        # Check for revenue fields
+        if 'total_revenue' not in response:
+            print("❌ Missing total_revenue")
+            return False
+            
+        print(f"✅ Dashboard has {len(response['expiring_soon'])} users expiring soon")
+        print(f"✅ Total revenue: R$ {response['total_revenue']}")
+        
+        return True
+
+    def test_admin_notify_expiring(self):
+        """Test admin notify expiring users endpoint"""
+        if not self.admin_token:
+            print("❌ No admin token available for notify expiring test")
+            return False
+            
+        success, response = self.run_test(
+            "Admin Notify Expiring Users",
+            "POST",
+            "admin/notify-expiring",
+            200,
+            headers={"Authorization": f"Bearer {self.admin_token}"}
+        )
+        
+        if not success:
+            return False
+            
+        # Check response structure
+        required_fields = ['message', 'total_expiring', 'sent', 'errors']
+        for field in required_fields:
+            if field not in response:
+                print(f"❌ Missing field in notify response: {field}")
+                return False
+                
+        print(f"✅ Notification result: {response['message']}")
+        print(f"✅ Total expiring: {response['total_expiring']}, Sent: {response['sent']}, Errors: {response['errors']}")
+        
+        return True
 
     # ===== ADMIN USER MANAGEMENT TESTS =====
 
@@ -499,6 +570,7 @@ def main():
         
         # Admin dashboard
         tester.test_admin_dashboard,
+        tester.test_admin_notify_expiring,
         
         # Admin user management
         tester.test_admin_get_users,
