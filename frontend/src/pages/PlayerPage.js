@@ -34,7 +34,12 @@ export default function PlayerPage() {
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [trackStates, setTrackStates] = useState([]);
-  const audioRefs = useRef([]);
+
+  // Web Audio API refs
+  const audioCtxRef = useRef(null);
+  const audioRefs = useRef([]);       // Audio elements
+  const gainNodesRef = useRef([]);    // GainNode per track
+  const sourceNodesRef = useRef([]);  // MediaElementSource per track
   const blobUrls = useRef([]);
   const animationRef = useRef(null);
   const isSeekingRef = useRef(false);
@@ -44,7 +49,10 @@ export default function PlayerPage() {
     return () => {
       if (animationRef.current) cancelAnimationFrame(animationRef.current);
       audioRefs.current.forEach(a => { if (a) { a.pause(); a.src = ''; } });
-      blobUrls.current.forEach(url => URL.revokeObjectURL(url));
+      blobUrls.current.forEach(url => { if (url) URL.revokeObjectURL(url); });
+      if (audioCtxRef.current && audioCtxRef.current.state !== 'closed') {
+        audioCtxRef.current.close().catch(() => {});
+      }
     };
   }, [songId]);
 
@@ -56,11 +64,14 @@ export default function PlayerPage() {
       if (!res.ok) throw new Error('Não encontrada');
       const data = await res.json();
       setSong(data);
+      const count = data.tracks.length;
       setTrackStates(data.tracks.map(() => ({ volume: 1, muted: false, solo: false })));
-      audioRefs.current = new Array(data.tracks.length).fill(null);
-      blobUrls.current = new Array(data.tracks.length).fill(null);
+      audioRefs.current = new Array(count).fill(null);
+      gainNodesRef.current = new Array(count).fill(null);
+      sourceNodesRef.current = new Array(count).fill(null);
+      blobUrls.current = new Array(count).fill(null);
       setLoading(false);
-      if (data.tracks.length > 0) {
+      if (count > 0) {
         setAudioLoading(true);
         await loadAllAudio(data.tracks);
         setAudioLoading(false);
@@ -72,6 +83,11 @@ export default function PlayerPage() {
   };
 
   const loadAllAudio = async (tracks) => {
+    // Create AudioContext
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    const ctx = new AudioContext();
+    audioCtxRef.current = ctx;
+
     const promises = tracks.map(async (track, index) => {
       try {
         const res = await fetch(`${API}/audio/stream/${songId}/${index}`, {
@@ -81,22 +97,39 @@ export default function PlayerPage() {
         const blob = await res.blob();
         const url = URL.createObjectURL(blob);
         blobUrls.current[index] = url;
+
         const audio = new Audio();
         audio.preload = 'auto';
+        audio.crossOrigin = 'anonymous';
         audio.src = url;
         audioRefs.current[index] = audio;
+
+        // Create Web Audio nodes: Audio → Source → GainNode → Destination
+        const source = ctx.createMediaElementSource(audio);
+        const gainNode = ctx.createGain();
+        gainNode.gain.value = 1.0;
+        source.connect(gainNode);
+        gainNode.connect(ctx.destination);
+
+        sourceNodesRef.current[index] = source;
+        gainNodesRef.current[index] = gainNode;
+
         return new Promise((resolve) => {
           audio.onloadedmetadata = () => resolve(audio.duration);
           audio.onerror = () => resolve(0);
           setTimeout(() => resolve(audio.duration || 0), 5000);
         });
       } catch (err) {
+        console.error(`Error loading track ${index}:`, err);
         return 0;
       }
     });
+
     const durations = await Promise.all(promises);
     const maxDuration = Math.max(...durations.filter(d => d > 0));
     if (maxDuration > 0) setDuration(maxDuration);
+
+    // Set up ended handler on first audio
     const firstAudio = audioRefs.current.find(a => a);
     if (firstAudio) {
       firstAudio.onended = () => {
@@ -114,35 +147,42 @@ export default function PlayerPage() {
     animationRef.current = requestAnimationFrame(updateTime);
   }, []);
 
-  // Apply volume/mute/solo to all audio elements
-  const applyAudioStates = useCallback((states) => {
+  const applyGain = useCallback((index, volume, muted) => {
+    const gain = gainNodesRef.current[index];
+    if (gain) {
+      gain.gain.value = muted ? 0 : volume;
+    }
+  }, []);
+
+  const applyAllGains = useCallback((states) => {
     const hasSolo = states.some(t => t.solo);
-    audioRefs.current.forEach((audio, i) => {
-      if (!audio) return;
-      const state = states[i];
-      if (!state) return;
+    states.forEach((state, i) => {
+      const gain = gainNodesRef.current[i];
+      if (!gain) return;
       if (hasSolo) {
-        audio.muted = !state.solo;
-        audio.volume = state.solo ? state.volume : 0;
+        gain.gain.value = state.solo ? state.volume : 0;
       } else {
-        audio.muted = state.muted;
-        audio.volume = state.muted ? 0 : state.volume;
+        gain.gain.value = state.muted ? 0 : state.volume;
       }
     });
   }, []);
 
-  // Apply whenever trackStates changes
   useEffect(() => {
-    applyAudioStates(trackStates);
-  }, [trackStates, applyAudioStates]);
+    applyAllGains(trackStates);
+  }, [trackStates, applyAllGains]);
 
   const togglePlay = async () => {
+    // Resume AudioContext if suspended (browser autoplay policy)
+    if (audioCtxRef.current && audioCtxRef.current.state === 'suspended') {
+      await audioCtxRef.current.resume();
+    }
+
     if (isPlaying) {
       audioRefs.current.forEach(a => { if (a) a.pause(); });
       setIsPlaying(false);
       if (animationRef.current) cancelAnimationFrame(animationRef.current);
     } else {
-      applyAudioStates(trackStates);
+      applyAllGains(trackStates);
       const playPromises = audioRefs.current.map(a => {
         if (a) return a.play().catch(() => {});
         return Promise.resolve();
@@ -162,28 +202,21 @@ export default function PlayerPage() {
   };
 
   const handleVolumeChange = (index, value) => {
-    // Immediately apply volume to the audio element
-    const audio = audioRefs.current[index];
-    if (audio) {
-      audio.volume = value;
-      audio.muted = false;
-    }
+    // Immediately apply via GainNode
+    applyGain(index, value, false);
     setTrackStates(prev => prev.map((t, i) =>
       i === index ? { ...t, volume: value, muted: false } : t
     ));
   };
 
   const toggleMute = (index) => {
-    const current = trackStates[index];
-    const newMuted = !current.muted;
-    const audio = audioRefs.current[index];
-    if (audio) {
-      audio.muted = newMuted;
-      audio.volume = newMuted ? 0 : current.volume;
-    }
-    setTrackStates(prev => prev.map((t, i) =>
-      i === index ? { ...t, muted: newMuted, solo: false } : t
-    ));
+    setTrackStates(prev => {
+      const newStates = prev.map((t, i) =>
+        i === index ? { ...t, muted: !t.muted, solo: false } : t
+      );
+      applyAllGains(newStates);
+      return newStates;
+    });
   };
 
   const toggleSolo = (index) => {
@@ -192,28 +225,15 @@ export default function PlayerPage() {
         if (i === index) return { ...t, solo: !t.solo, muted: false };
         return { ...t, solo: false };
       });
-      // Immediately apply
-      const hasSolo = newStates.some(t => t.solo);
-      audioRefs.current.forEach((audio, i) => {
-        if (!audio) return;
-        const s = newStates[i];
-        if (hasSolo) {
-          audio.muted = !s.solo;
-          audio.volume = s.solo ? s.volume : 0;
-        } else {
-          audio.muted = s.muted;
-          audio.volume = s.muted ? 0 : s.volume;
-        }
-      });
+      applyAllGains(newStates);
       return newStates;
     });
   };
 
   const resetAll = () => {
-    audioRefs.current.forEach((audio) => {
-      if (audio) { audio.volume = 1; audio.muted = false; }
-    });
-    setTrackStates(prev => prev.map(() => ({ volume: 1, muted: false, solo: false })));
+    const newStates = trackStates.map(() => ({ volume: 1, muted: false, solo: false }));
+    applyAllGains(newStates);
+    setTrackStates(newStates);
   };
 
   const formatTime = (s) => {
@@ -284,7 +304,7 @@ export default function PlayerPage() {
                   background: isActive ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.01)',
                   border: `1px solid ${isActive ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.03)'}`,
                   opacity: isActive ? 1 : 0.4,
-                  transition: 'all 0.3s ease-out'
+                  transition: 'background 0.3s, border-color 0.3s, opacity 0.3s'
                 }}
               >
                 <div className="flex items-center gap-3 flex-1 min-w-0">
@@ -310,7 +330,7 @@ export default function PlayerPage() {
                       }}>M</button>
                   </div>
                 </div>
-                {/* Volume slider - prominent and interactive */}
+                {/* Volume slider */}
                 <div className="flex items-center gap-3 w-full sm:w-48">
                   <button onClick={() => toggleMute(i)} className="flex-shrink-0 p-1">
                     {state.muted || (hasSolo && !state.solo)
@@ -318,7 +338,6 @@ export default function PlayerPage() {
                       : <Volume2 className="w-5 h-5" style={{ color }} />}
                   </button>
                   <div className="relative flex-1" style={{ minWidth: '100px' }}>
-                    {/* Visual fill bar */}
                     <div className="absolute top-1/2 left-0 -translate-y-1/2 h-2 rounded-full pointer-events-none"
                       style={{ width: `${state.volume * 100}%`, background: `${color}80`, zIndex: 1 }} />
                     <input
