@@ -310,23 +310,29 @@ export default function PlayerPage() {
                       }}>M</button>
                   </div>
                 </div>
-                {/* Volume slider - full width on mobile */}
-                <div className="flex items-center gap-2 w-full sm:w-36">
-                  <button onClick={() => toggleMute(i)} className="flex-shrink-0">
+                {/* Volume slider - prominent and interactive */}
+                <div className="flex items-center gap-3 w-full sm:w-48">
+                  <button onClick={() => toggleMute(i)} className="flex-shrink-0 p-1">
                     {state.muted || (hasSolo && !state.solo)
-                      ? <VolumeX className="w-4 h-4" style={{ color: '#ef4444' }} />
-                      : <Volume2 className="w-4 h-4" style={{ color }} />}
+                      ? <VolumeX className="w-5 h-5" style={{ color: '#ef4444' }} />
+                      : <Volume2 className="w-5 h-5" style={{ color }} />}
                   </button>
-                  <input
-                    type="range"
-                    data-testid={`track-volume-${i}`}
-                    min="0" max="1" step="0.01"
-                    value={state.volume}
-                    onChange={(e) => handleVolumeChange(i, parseFloat(e.target.value))}
-                    className="w-full"
-                    style={{ accentColor: color }}
-                  />
-                  <span className="text-xs w-8 text-right tabular-nums" style={{ color: '#94a3b8' }}>
+                  <div className="relative flex-1" style={{ minWidth: '100px' }}>
+                    {/* Visual fill bar */}
+                    <div className="absolute top-1/2 left-0 -translate-y-1/2 h-2 rounded-full pointer-events-none"
+                      style={{ width: `${state.volume * 100}%`, background: `${color}80`, zIndex: 1 }} />
+                    <input
+                      type="range"
+                      data-testid={`track-volume-${i}`}
+                      min="0" max="1" step="0.01"
+                      value={state.volume}
+                      onInput={(e) => handleVolumeChange(i, parseFloat(e.target.value))}
+                      onChange={(e) => handleVolumeChange(i, parseFloat(e.target.value))}
+                      className="w-full relative"
+                      style={{ accentColor: color, zIndex: 2 }}
+                    />
+                  </div>
+                  <span className="text-xs w-8 text-right tabular-nums font-bold" style={{ color }}>
                     {Math.round(state.volume * 100)}
                   </span>
                 </div>
