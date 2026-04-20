@@ -4,26 +4,18 @@ import { useAuth } from '../contexts/AuthContext';
 import { Button } from '../components/ui/button';
 import { toast } from 'sonner';
 import { Play, Pause, ArrowLeft, Volume2, VolumeX, RotateCcw } from 'lucide-react';
+import { COLORS, trackColor } from '../theme';
 
 const API = process.env.REACT_APP_BACKEND_URL + '/api';
 
-const TRACK_COLORS = {
-  soprano:   '#a60ef7', // roxo puro
-  contralto: '#b925c9', // roxo magenta
-  tenor:     '#cc3c9b', // rosa roxo
-  baritono:  '#df536d', // rosa coral
-  base:      '#f26a40', // laranja coral
-  default:   '#94A3B8'
-};
-
 function getTrackColor(type) {
-  if (!type) return TRACK_COLORS.default;
+  if (!type) return COLORS.tracks.default;
   const t = type.toLowerCase();
-  if (t.includes('soprano')) return TRACK_COLORS.soprano;
-  if (t.includes('contralto') || t.includes('alto')) return TRACK_COLORS.contralto;
-  if (t.includes('tenor')) return TRACK_COLORS.tenor;
-  if (t.includes('bari')) return TRACK_COLORS.baritono;
-  if (t.includes('base') || t.includes('melod') || t.includes('harmon')) return TRACK_COLORS.base;
+  if (t.includes('soprano')) return COLORS.tracks.soprano;
+  if (t.includes('contralto') || t.includes('alto')) return COLORS.tracks.contralto;
+  if (t.includes('tenor')) return COLORS.tracks.tenor;
+  if (t.includes('bari')) return COLORS.tracks.baritono;
+  if (t.includes('base') || t.includes('melod') || t.includes('harmon')) return COLORS.tracks.base;
   return TRACK_COLORS.default;
 }
 

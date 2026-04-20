@@ -12,8 +12,8 @@
     --card-foreground: 210 40% 98%;
     --popover: 230 30% 6%;
     --popover-foreground: 210 40% 98%;
-    --primary: 51 100% 50%;
-    --primary-foreground: 0 0% 0%;
+    --primary: 279 94% 51%;     /* #a60ef7 roxo principal */
+    --primary-foreground: 0 0% 100%;
     --secondary: 230 15% 12%;
     --secondary-foreground: 210 40% 98%;
     --muted: 230 15% 15%;
@@ -24,8 +24,8 @@
     --destructive-foreground: 210 40% 98%;
     --border: 230 15% 12%;
     --input: 230 15% 12%;
-    --ring: 51 100% 50%;
-    --chart-1: 51 100% 50%;
+    --ring: 279 94% 51%;
+    --chart-1: 279 94% 51%;    /* roxo */
     --chart-2: 160 60% 45%;
     --chart-3: 30 80% 55%;
     --chart-4: 280 65% 60%;
