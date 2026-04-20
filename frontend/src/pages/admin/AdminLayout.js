@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { LayoutDashboard, Users, Music, Flame, DollarSign, LogOut, Shield, Menu, X } from 'lucide-react';
+import Logo from '../../components/Logo';
 
 const navItems = [
   { path: '/admin', label: 'Dashboard', icon: LayoutDashboard, exact: true },
@@ -32,8 +33,7 @@ export default function AdminLayout() {
       {/* Mobile header */}
       <div className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4 py-3 lg:hidden" style={{ background: '#0a0c14', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
         <div className="flex items-center gap-2">
-          <Shield className="w-5 h-5" style={{ color: '#a60ef7' }} />
-          <span className="font-bold" style={{ fontFamily: 'Playfair Display, serif', color: '#f8fafc' }}>Admin</span>
+          <Logo size="sm" />
         </div>
         <button onClick={() => setSidebarOpen(!sidebarOpen)} data-testid="admin-menu-toggle"
           className="p-2 rounded-lg" style={{ color: '#94a3b8' }}>
@@ -53,9 +53,8 @@ export default function AdminLayout() {
         lg:translate-x-0 lg:static lg:z-auto
         ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
       `} style={{ background: '#0a0c14', borderColor: 'rgba(255,255,255,0.05)' }}>
-        <div className="p-6 flex items-center gap-3">
-          <Shield className="w-6 h-6" style={{ color: '#a60ef7' }} />
-          <span className="text-lg font-bold" style={{ fontFamily: 'Playfair Display, serif', color: '#f8fafc' }}>Admin</span>
+        <div className="p-6">
+          <Logo size="sm" />
         </div>
         <nav className="flex-1 px-3 space-y-1">
           {navItems.map(item => (

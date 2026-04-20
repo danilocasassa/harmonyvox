@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Input } from '../components/ui/input';
 import { Search, Music, LogOut, User, Flame } from 'lucide-react';
+import Logo from '../components/Logo';
 import { toast } from 'sonner';
 
 export default function HomePage() {
@@ -37,9 +38,8 @@ export default function HomePage() {
       {/* Header */}
       <header className="sticky top-0 z-40 border-b" style={{ background: 'rgba(2,4,10,0.9)', backdropFilter: 'blur(12px)', borderColor: 'rgba(255,255,255,0.05)' }}>
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate('/')}>
-            <Music className="w-6 h-6" style={{ color: '#a60ef7' }} />
-            <span className="text-lg font-bold" style={{ fontFamily: 'Playfair Display, serif', color: '#f8fafc' }}>HarmonyVox</span>
+          <div className="cursor-pointer" onClick={() => navigate('/')}>
+            <Logo size="sm" />
           </div>
           <nav className="flex items-center gap-2">
             <button
