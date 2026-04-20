@@ -5,7 +5,8 @@ import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { toast } from 'sonner';
-import { Music, Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff } from 'lucide-react';
+import Logo from '../components/Logo';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -53,14 +54,9 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center p-6" style={{ background: '#02040a' }}>
       <div className="w-full max-w-md">
-        <div className="text-center mb-10">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full mb-4" style={{ background: 'rgba(166,14,247,0.1)', border: '1px solid rgba(166,14,247,0.2)' }}>
-            <Music className="w-8 h-8" style={{ color: '#a60ef7' }} />
-          </div>
-          <h1 className="text-4xl font-bold tracking-tight" style={{ fontFamily: 'Playfair Display, serif', color: '#f8fafc' }}>
-            HarmonyVox
-          </h1>
-          <p className="mt-2 text-sm" style={{ color: '#94a3b8' }}>Treine seus naipes vocais</p>
+        <div className="flex flex-col items-center mb-10">
+          <Logo size="lg" />
+          <p className="mt-3 text-sm" style={{ color: '#94a3b8' }}>Treine seus naipes vocais</p>
         </div>
 
         {!showForgot ? (

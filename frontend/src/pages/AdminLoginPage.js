@@ -6,6 +6,7 @@ import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { toast } from 'sonner';
 import { Shield, Eye, EyeOff } from 'lucide-react';
+import Logo from '../components/Logo';
 
 export default function AdminLoginPage() {
   const [email, setEmail] = useState('');
@@ -32,14 +33,15 @@ export default function AdminLoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center p-6" style={{ background: '#02040a' }}>
       <div className="w-full max-w-md">
-        <div className="text-center mb-10">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full mb-4" style={{ background: 'rgba(166,14,247,0.1)', border: '1px solid rgba(166,14,247,0.2)' }}>
-            <Shield className="w-8 h-8" style={{ color: '#a60ef7' }} />
+        <div className="flex flex-col items-center mb-10">
+          <Logo size="md" />
+          <div className="mt-4 flex items-center gap-2">
+            <Shield className="w-4 h-4" style={{ color: '#a60ef7' }} />
+            <h1 className="text-xl font-bold" style={{ fontFamily: 'Playfair Display, serif', color: '#f8fafc' }}>
+              Painel Admin
+            </h1>
           </div>
-          <h1 className="text-4xl font-bold tracking-tight" style={{ fontFamily: 'Playfair Display, serif', color: '#f8fafc' }}>
-            Painel Admin
-          </h1>
-          <p className="mt-2 text-sm" style={{ color: '#94a3b8' }}>Acesso restrito</p>
+          <p className="mt-1 text-sm" style={{ color: '#94a3b8' }}>Acesso restrito</p>
         </div>
 
         <form onSubmit={handleLogin} className="glass-card rounded-xl p-8 space-y-6">

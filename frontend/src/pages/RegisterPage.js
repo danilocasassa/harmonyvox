@@ -5,7 +5,8 @@ import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { toast } from 'sonner';
-import { Music, Eye, EyeOff, Check } from 'lucide-react';
+import { Eye, EyeOff, Check } from 'lucide-react';
+import Logo from '../components/Logo';
 
 const API = process.env.REACT_APP_BACKEND_URL + '/api';
 
@@ -52,14 +53,12 @@ export default function RegisterPage() {
   return (
     <div className="min-h-screen flex items-center justify-center p-6" style={{ background: '#02040a' }}>
       <div className="w-full max-w-lg">
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full mb-4" style={{ background: 'rgba(166,14,247,0.1)', border: '1px solid rgba(166,14,247,0.2)' }}>
-            <Music className="w-8 h-8" style={{ color: '#a60ef7' }} />
-          </div>
-          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight" style={{ fontFamily: 'Playfair Display, serif', color: '#f8fafc' }}>
+        <div className="flex flex-col items-center mb-8">
+          <Logo size="md" />
+          <h1 className="mt-4 text-3xl sm:text-4xl font-bold tracking-tight" style={{ fontFamily: 'Playfair Display, serif', color: '#f8fafc' }}>
             Criar Conta
           </h1>
-          <p className="mt-2 text-sm" style={{ color: '#94a3b8' }}>Junte-se ao HarmonyVox</p>
+          <p className="mt-1 text-sm" style={{ color: '#94a3b8' }}>Junte-se ao HarmonyVox</p>
         </div>
 
         <form onSubmit={handleRegister} className="glass-card rounded-xl p-6 sm:p-8 space-y-5">
