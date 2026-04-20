@@ -8,8 +8,12 @@ import { Play, Pause, ArrowLeft, Volume2, VolumeX, RotateCcw } from 'lucide-reac
 const API = process.env.REACT_APP_BACKEND_URL + '/api';
 
 const TRACK_COLORS = {
-  soprano: '#FF6B9D', contralto: '#C084FC', tenor: '#38BDF8',
-  baritono: '#34D399', base: '#a60ef7', default: '#94A3B8'
+  soprano:   '#a60ef7', // roxo puro
+  contralto: '#b925c9', // roxo magenta
+  tenor:     '#cc3c9b', // rosa roxo
+  baritono:  '#df536d', // rosa coral
+  base:      '#f26a40', // laranja coral
+  default:   '#94A3B8'
 };
 
 function getTrackColor(type) {
