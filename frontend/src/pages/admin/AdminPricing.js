@@ -47,7 +47,7 @@ export default function AdminPricing() {
         <div className="space-y-2">
           <Label style={{ color: '#94a3b8' }}>Preço Mensal (R$)</Label>
           <div className="relative">
-            <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5" style={{ color: '#FFD700' }} />
+            <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5" style={{ color: '#a60ef7' }} />
             <Input
               data-testid="admin-price-input"
               type="number"
@@ -55,7 +55,7 @@ export default function AdminPricing() {
               min="0"
               value={price}
               onChange={(e) => setPrice(e.target.value)}
-              className="pl-10 h-12 bg-black/20 border-white/10 focus:border-[#FFD700] text-white text-lg font-bold"
+              className="pl-10 h-12 bg-black/20 border-white/10 focus:border-[#a60ef7] text-white text-lg font-bold"
             />
           </div>
         </div>
@@ -92,7 +92,7 @@ export default function AdminPricing() {
           disabled={saving || loading}
           data-testid="admin-save-pricing-btn"
           className="w-full h-12 font-bold text-black"
-          style={{ background: '#FFD700', boxShadow: '0 0 15px rgba(255,215,0,0.3)' }}
+          style={{ background: '#a60ef7', boxShadow: '0 0 15px rgba(166,14,247,0.3)' }}
         >
           {saving ? 'Salvando...' : 'Salvar Configuração'}
         </Button>

@@ -38,7 +38,7 @@ export default function HomePage() {
       <header className="sticky top-0 z-40 border-b" style={{ background: 'rgba(2,4,10,0.9)', backdropFilter: 'blur(12px)', borderColor: 'rgba(255,255,255,0.05)' }}>
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate('/')}>
-            <Music className="w-6 h-6" style={{ color: '#FFD700' }} />
+            <Music className="w-6 h-6" style={{ color: '#a60ef7' }} />
             <span className="text-lg font-bold" style={{ fontFamily: 'Playfair Display, serif', color: '#f8fafc' }}>HarmonyVox</span>
           </div>
           <nav className="flex items-center gap-2">
@@ -92,7 +92,7 @@ export default function HomePage() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Buscar música ou artista..."
-            className="pl-10 h-12 bg-black/20 border-white/10 focus:border-[#FFD700] text-white placeholder:text-white/30"
+            className="pl-10 h-12 bg-black/20 border-white/10 focus:border-[#a60ef7] text-white placeholder:text-white/30"
           />
         </div>
 
@@ -115,12 +115,12 @@ export default function HomePage() {
                 key={song.id}
                 data-testid={`song-card-${song.id}`}
                 onClick={() => navigate(`/player/${song.id}`)}
-                className="glass-card rounded-xl p-6 text-left transition-all duration-300 hover:border-[#FFD700]/20 hover:-translate-y-0.5 group animate-fade-in-up"
+                className="glass-card rounded-xl p-6 text-left transition-all duration-300 hover:border-[#a60ef7]/20 hover:-translate-y-0.5 group animate-fade-in-up"
                 style={{ animationDelay: `${idx * 0.05}s`, opacity: 0 }}
               >
                 <div className="flex items-start gap-4">
-                  <div className="flex-shrink-0 w-12 h-12 rounded-lg flex items-center justify-center" style={{ background: 'rgba(255,215,0,0.1)' }}>
-                    <Music className="w-6 h-6 group-hover:scale-110 transition-transform" style={{ color: '#FFD700' }} />
+                  <div className="flex-shrink-0 w-12 h-12 rounded-lg flex items-center justify-center" style={{ background: 'rgba(166,14,247,0.1)' }}>
+                    <Music className="w-6 h-6 group-hover:scale-110 transition-transform" style={{ color: '#a60ef7' }} />
                   </div>
                   <div className="flex-1 min-w-0">
                     <h3 className="font-semibold truncate" style={{ color: '#f8fafc' }}>{song.title}</h3>

@@ -25,7 +25,7 @@
     }
   },
   "colors": {
-    "palette_name": "Obsidian Gold",
+    "palette_name": "Obsidian Purple",
     "background": {
       "default": "#02040a",
       "paper": "#0f111a",
@@ -37,14 +37,14 @@
       "muted": "#475569"
     },
     "accent": {
-      "primary": "#FFD700",
-      "primary_hover": "#E6C200",
+      "primary": "#a60ef7",
+      "primary_hover": "#8a0bc9",
       "secondary": "#38bdf8",
       "destructive": "#ef4444",
       "success": "#22c55e"
     },
     "gradients": {
-      "gold_glow": "linear-gradient(135deg, #FFD700 0%, #B8860B 100%)",
+      "purple_glow": "linear-gradient(135deg, #a60ef7 0%, #6d0a9e 100%)",
       "midnight_fade": "linear-gradient(to bottom, transparent, #02040a)"
     }
   },
@@ -55,7 +55,7 @@
   },
   "components": {
     "buttons": {
-      "primary": "bg-accent-primary text-black font-bold uppercase tracking-wider hover:bg-accent-primary_hover shadow-[0_0_15px_rgba(255,215,0,0.3)] transition-all",
+      "primary": "bg-accent-primary text-black font-bold uppercase tracking-wider hover:bg-accent-primary_hover shadow-[0_0_15px_rgba(166,14,247,0.3)] transition-all",
       "secondary": "border border-white/10 bg-white/5 text-white hover:bg-white/10 backdrop-blur-md",
       "icon": "rounded-full p-3 hover:bg-white/10 transition-colors"
     },
@@ -71,7 +71,7 @@
       "container": "bg-[#050508] border-t border-white/10 p-6 fixed bottom-0 w-full z-50 shadow-[0_-10px_40px_rgba(0,0,0,0.5)]",
       "track_lane": "flex items-center gap-4 p-3 bg-white/5 rounded-lg mb-2 border border-white/5 hover:border-white/10 transition-colors",
       "fader": "appearance-none bg-white/10 h-1 rounded-full [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-accent-primary",
-      "solo_btn": "text-xs font-bold px-2 py-1 rounded border border-yellow-500/50 text-yellow-500 hover:bg-yellow-500 hover:text-black transition-colors data-[active=true]:bg-yellow-500 data-[active=true]:text-black",
+      "solo_btn": "text-xs font-bold px-2 py-1 rounded border border-purple-500/50 text-purple-400 hover:bg-purple-500 hover:text-white transition-colors data-[active=true]:bg-purple-500 data-[active=true]:text-white",
       "mute_btn": "text-xs font-bold px-2 py-1 rounded border border-red-500/50 text-red-500 hover:bg-red-500 hover:text-white transition-colors data-[active=true]:bg-red-500 data-[active=true]:text-white"
     }
   },

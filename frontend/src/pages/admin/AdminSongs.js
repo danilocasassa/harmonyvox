@@ -99,7 +99,7 @@ export default function AdminSongs() {
         <h1 className="text-3xl font-bold" style={{ fontFamily: 'Playfair Display, serif', color: '#f8fafc' }}>Músicas</h1>
         <Dialog open={showCreate} onOpenChange={setShowCreate}>
           <DialogTrigger asChild>
-            <Button data-testid="admin-create-song-btn" className="h-10 font-bold text-black" style={{ background: '#FFD700' }}>
+            <Button data-testid="admin-create-song-btn" className="h-10 font-bold text-black" style={{ background: '#a60ef7' }}>
               <Plus className="w-4 h-4 mr-2" /> Nova Música
             </Button>
           </DialogTrigger>
@@ -116,7 +116,7 @@ export default function AdminSongs() {
                 <Label style={{ color: '#94a3b8' }}>Artista</Label>
                 <Input data-testid="admin-new-song-artist" value={newSong.artist} onChange={(e) => setNewSong({ ...newSong, artist: e.target.value })} placeholder="ex: Danilo Casassa" className="bg-black/20 border-white/10 text-white placeholder:text-white/30" />
               </div>
-              <Button type="submit" disabled={saving} data-testid="admin-save-song-btn" className="w-full h-10 font-bold text-black" style={{ background: '#FFD700' }}>
+              <Button type="submit" disabled={saving} data-testid="admin-save-song-btn" className="w-full h-10 font-bold text-black" style={{ background: '#a60ef7' }}>
                 {saving ? 'Criando...' : 'Criar Música'}
               </Button>
             </form>
@@ -138,8 +138,8 @@ export default function AdminSongs() {
               {/* Song header */}
               <div className="flex items-center justify-between p-5">
                 <button onClick={() => setExpanded(expanded === song.id ? null : song.id)} className="flex items-center gap-3 flex-1 text-left">
-                  <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ background: 'rgba(255,215,0,0.1)' }}>
-                    <Music className="w-5 h-5" style={{ color: '#FFD700' }} />
+                  <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ background: 'rgba(166,14,247,0.1)' }}>
+                    <Music className="w-5 h-5" style={{ color: '#a60ef7' }} />
                   </div>
                   <div>
                     <h3 className="font-semibold" style={{ color: '#f8fafc' }}>{song.title}</h3>
@@ -220,7 +220,7 @@ export default function AdminSongs() {
                       disabled={uploadingSong === song.id}
                       data-testid={`admin-upload-track-${song.id}`}
                       className="mt-3 h-9 text-sm font-bold text-black"
-                      style={{ background: '#FFD700' }}
+                      style={{ background: '#a60ef7' }}
                     >
                       {uploadingSong === song.id ? 'Enviando...' : 'Adicionar Faixa'}
                     </Button>

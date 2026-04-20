@@ -53,8 +53,8 @@ export default function RegisterPage() {
     <div className="min-h-screen flex items-center justify-center p-6" style={{ background: '#02040a' }}>
       <div className="w-full max-w-lg">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full mb-4" style={{ background: 'rgba(255,215,0,0.1)', border: '1px solid rgba(255,215,0,0.2)' }}>
-            <Music className="w-8 h-8" style={{ color: '#FFD700' }} />
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full mb-4" style={{ background: 'rgba(166,14,247,0.1)', border: '1px solid rgba(166,14,247,0.2)' }}>
+            <Music className="w-8 h-8" style={{ color: '#a60ef7' }} />
           </div>
           <h1 className="text-3xl sm:text-4xl font-bold tracking-tight" style={{ fontFamily: 'Playfair Display, serif', color: '#f8fafc' }}>
             Criar Conta
@@ -66,19 +66,19 @@ export default function RegisterPage() {
           <div className="space-y-2">
             <Label htmlFor="name" style={{ color: '#94a3b8' }}>Nome</Label>
             <Input id="name" data-testid="register-name-input" value={name} onChange={(e) => setName(e.target.value)}
-              placeholder="Seu nome" required className="h-12 bg-black/20 border-white/10 focus:border-[#FFD700] text-white placeholder:text-white/30" />
+              placeholder="Seu nome" required className="h-12 bg-black/20 border-white/10 focus:border-[#a60ef7] text-white placeholder:text-white/30" />
           </div>
           <div className="space-y-2">
             <Label htmlFor="email" style={{ color: '#94a3b8' }}>Email</Label>
             <Input id="email" data-testid="register-email-input" type="email" value={email} onChange={(e) => setEmail(e.target.value)}
-              placeholder="seu@email.com" required className="h-12 bg-black/20 border-white/10 focus:border-[#FFD700] text-white placeholder:text-white/30" />
+              placeholder="seu@email.com" required className="h-12 bg-black/20 border-white/10 focus:border-[#a60ef7] text-white placeholder:text-white/30" />
           </div>
           <div className="space-y-2">
             <Label htmlFor="password" style={{ color: '#94a3b8' }}>Senha</Label>
             <div className="relative">
               <Input id="password" data-testid="register-password-input" type={showPw ? 'text' : 'password'} value={password}
                 onChange={(e) => setPassword(e.target.value)} placeholder="Mínimo 6 caracteres" required
-                className="h-12 bg-black/20 border-white/10 focus:border-[#FFD700] text-white placeholder:text-white/30 pr-12" />
+                className="h-12 bg-black/20 border-white/10 focus:border-[#a60ef7] text-white placeholder:text-white/30 pr-12" />
               <button type="button" onClick={() => setShowPw(!showPw)} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/70">
                 {showPw ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
               </button>
@@ -98,15 +98,15 @@ export default function RegisterPage() {
                   onClick={() => setPlanType(plan.id)}
                   className="relative p-3 rounded-xl text-center transition-all"
                   style={{
-                    background: planType === plan.id ? 'rgba(255,215,0,0.1)' : 'rgba(255,255,255,0.02)',
-                    border: `1px solid ${planType === plan.id ? 'rgba(255,215,0,0.4)' : 'rgba(255,255,255,0.05)'}`,
+                    background: planType === plan.id ? 'rgba(166,14,247,0.1)' : 'rgba(255,255,255,0.02)',
+                    border: `1px solid ${planType === plan.id ? 'rgba(166,14,247,0.4)' : 'rgba(255,255,255,0.05)'}`,
                   }}>
                   {planType === plan.id && (
-                    <div className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full flex items-center justify-center" style={{ background: '#FFD700' }}>
+                    <div className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full flex items-center justify-center" style={{ background: '#a60ef7' }}>
                       <Check className="w-3 h-3 text-black" />
                     </div>
                   )}
-                  <p className="text-xs font-medium mb-1" style={{ color: planType === plan.id ? '#FFD700' : '#94a3b8' }}>{plan.label}</p>
+                  <p className="text-xs font-medium mb-1" style={{ color: planType === plan.id ? '#a60ef7' : '#94a3b8' }}>{plan.label}</p>
                   <p className="text-sm font-bold" style={{ color: '#f8fafc' }}>R$ {plan.total_price?.toFixed(2)}</p>
                 </button>
               ))}
@@ -115,11 +115,11 @@ export default function RegisterPage() {
 
           <Button type="submit" data-testid="register-submit-button" disabled={loading}
             className="w-full h-12 font-bold uppercase tracking-wider text-black"
-            style={{ background: '#FFD700', boxShadow: '0 0 15px rgba(255,215,0,0.3)' }}>
+            style={{ background: '#a60ef7', boxShadow: '0 0 15px rgba(166,14,247,0.3)' }}>
             {loading ? 'Criando...' : 'Criar Conta'}
           </Button>
           <div className="text-center text-sm">
-            <Link to="/login" className="hover:underline" style={{ color: '#FFD700' }} data-testid="back-to-login-link">
+            <Link to="/login" className="hover:underline" style={{ color: '#a60ef7' }} data-testid="back-to-login-link">
               Já tem conta? Entrar
             </Link>
           </div>

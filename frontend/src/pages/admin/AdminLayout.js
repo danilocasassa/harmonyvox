@@ -32,7 +32,7 @@ export default function AdminLayout() {
       {/* Mobile header */}
       <div className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4 py-3 lg:hidden" style={{ background: '#0a0c14', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
         <div className="flex items-center gap-2">
-          <Shield className="w-5 h-5" style={{ color: '#FFD700' }} />
+          <Shield className="w-5 h-5" style={{ color: '#a60ef7' }} />
           <span className="font-bold" style={{ fontFamily: 'Playfair Display, serif', color: '#f8fafc' }}>Admin</span>
         </div>
         <button onClick={() => setSidebarOpen(!sidebarOpen)} data-testid="admin-menu-toggle"
@@ -54,7 +54,7 @@ export default function AdminLayout() {
         ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
       `} style={{ background: '#0a0c14', borderColor: 'rgba(255,255,255,0.05)' }}>
         <div className="p-6 flex items-center gap-3">
-          <Shield className="w-6 h-6" style={{ color: '#FFD700' }} />
+          <Shield className="w-6 h-6" style={{ color: '#a60ef7' }} />
           <span className="text-lg font-bold" style={{ fontFamily: 'Playfair Display, serif', color: '#f8fafc' }}>Admin</span>
         </div>
         <nav className="flex-1 px-3 space-y-1">
@@ -65,9 +65,9 @@ export default function AdminLayout() {
               onClick={() => handleNav(item.path)}
               className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all"
               style={{
-                background: isActive(item) ? 'rgba(255,215,0,0.1)' : 'transparent',
-                color: isActive(item) ? '#FFD700' : '#94a3b8',
-                borderLeft: isActive(item) ? '2px solid #FFD700' : '2px solid transparent'
+                background: isActive(item) ? 'rgba(166,14,247,0.1)' : 'transparent',
+                color: isActive(item) ? '#a60ef7' : '#94a3b8',
+                borderLeft: isActive(item) ? '2px solid #a60ef7' : '2px solid transparent'
               }}
             >
               <item.icon className="w-5 h-5" />

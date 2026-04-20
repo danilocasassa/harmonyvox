@@ -47,7 +47,7 @@ export default function PaymentSuccessPage() {
       <div className="glass-card rounded-xl p-10 max-w-md w-full text-center">
         {status === 'loading' && (
           <>
-            <Loader className="w-16 h-16 mx-auto mb-4 animate-spin" style={{ color: '#FFD700' }} />
+            <Loader className="w-16 h-16 mx-auto mb-4 animate-spin" style={{ color: '#a60ef7' }} />
             <h2 className="text-2xl font-bold mb-2" style={{ fontFamily: 'Playfair Display, serif', color: '#f8fafc' }}>Processando...</h2>
             <p style={{ color: '#94a3b8' }}>Verificando seu pagamento.</p>
           </>
@@ -57,7 +57,7 @@ export default function PaymentSuccessPage() {
             <CheckCircle className="w-16 h-16 mx-auto mb-4" style={{ color: '#22c55e' }} />
             <h2 className="text-2xl font-bold mb-2" style={{ fontFamily: 'Playfair Display, serif', color: '#f8fafc' }}>Pagamento Confirmado!</h2>
             <p className="mb-6" style={{ color: '#94a3b8' }}>Sua assinatura foi renovada por mais 30 dias.</p>
-            <Button onClick={() => navigate('/')} data-testid="payment-go-home" className="h-12 font-bold text-black px-8" style={{ background: '#FFD700' }}>
+            <Button onClick={() => navigate('/')} data-testid="payment-go-home" className="h-12 font-bold text-black px-8" style={{ background: '#a60ef7' }}>
               Ir para Repertório
             </Button>
           </>
@@ -71,7 +71,7 @@ export default function PaymentSuccessPage() {
             <p className="mb-6" style={{ color: '#94a3b8' }}>
               {status === 'timeout' ? 'O status do pagamento não pôde ser verificado. Verifique seu email.' : 'O pagamento não foi concluído.'}
             </p>
-            <Button onClick={() => navigate('/profile')} data-testid="payment-go-profile" className="h-12 font-bold text-black px-8" style={{ background: '#FFD700' }}>
+            <Button onClick={() => navigate('/profile')} data-testid="payment-go-profile" className="h-12 font-bold text-black px-8" style={{ background: '#a60ef7' }}>
               Voltar ao Perfil
             </Button>
           </>

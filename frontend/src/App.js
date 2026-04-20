@@ -19,14 +19,14 @@ import AdminPricing from './pages/admin/AdminPricing';
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
-  if (loading) return <div className="min-h-screen flex items-center justify-center" style={{ background: '#02040a' }}><div className="animate-spin w-8 h-8 border-2 border-t-transparent rounded-full" style={{ borderColor: '#FFD700', borderTopColor: 'transparent' }} /></div>;
+  if (loading) return <div className="min-h-screen flex items-center justify-center" style={{ background: '#02040a' }}><div className="animate-spin w-8 h-8 border-2 border-t-transparent rounded-full" style={{ borderColor: '#a60ef7', borderTopColor: 'transparent' }} /></div>;
   if (!user) return <Navigate to="/login" replace />;
   return children;
 }
 
 function AdminRoute({ children }) {
   const { user, loading } = useAuth();
-  if (loading) return <div className="min-h-screen flex items-center justify-center" style={{ background: '#02040a' }}><div className="animate-spin w-8 h-8 border-2 border-t-transparent rounded-full" style={{ borderColor: '#FFD700', borderTopColor: 'transparent' }} /></div>;
+  if (loading) return <div className="min-h-screen flex items-center justify-center" style={{ background: '#02040a' }}><div className="animate-spin w-8 h-8 border-2 border-t-transparent rounded-full" style={{ borderColor: '#a60ef7', borderTopColor: 'transparent' }} /></div>;
   if (!user || user.role !== 'admin') return <Navigate to="/admin/login" replace />;
   return children;
 }

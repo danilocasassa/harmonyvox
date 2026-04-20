@@ -62,7 +62,7 @@ export default function WarmupPage() {
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div className="flex items-center gap-2">
-            <Flame className="w-5 h-5" style={{ color: '#FFD700' }} />
+            <Flame className="w-5 h-5" style={{ color: '#a60ef7' }} />
             <h1 className="text-xl font-bold" style={{ fontFamily: 'Playfair Display, serif', color: '#f8fafc' }}>Warm Up</h1>
           </div>
         </div>
@@ -95,14 +95,14 @@ export default function WarmupPage() {
                   onClick={() => togglePlay(item)}
                   data-testid={`warmup-play-${item.id}`}
                   className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 transition-all"
-                  style={{ background: playingId === item.id ? '#FFD700' : 'rgba(255,215,0,0.1)', color: playingId === item.id ? '#000' : '#FFD700' }}
+                  style={{ background: playingId === item.id ? '#a60ef7' : 'rgba(166,14,247,0.1)', color: playingId === item.id ? '#000' : '#a60ef7' }}
                 >
                   {playingId === item.id ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5 ml-0.5" />}
                 </button>
                 <div className="flex-1 min-w-0">
                   <h3 className="font-semibold truncate" style={{ color: '#f8fafc' }}>{item.title}</h3>
                   {item.description && <p className="text-sm truncate" style={{ color: '#94a3b8' }}>{item.description}</p>}
-                  <span className="text-xs px-2 py-0.5 rounded mt-1 inline-block" style={{ background: 'rgba(255,215,0,0.1)', color: '#FFD700' }}>
+                  <span className="text-xs px-2 py-0.5 rounded mt-1 inline-block" style={{ background: 'rgba(166,14,247,0.1)', color: '#a60ef7' }}>
                     {item.content_type === 'audio' ? 'Áudio' : 'Vídeo'}
                   </span>
                 </div>

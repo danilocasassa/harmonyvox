@@ -307,9 +307,9 @@ async def forgot_password(data: ForgotPassword):
             "subject": "HarmonyVox - Recuperação de Senha",
             "html": f"""
             <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 20px;">
-                <h2 style="color: #FFD700;">HarmonyVox</h2>
+                <h2 style="color: #a60ef7;">HarmonyVox</h2>
                 <p>Sua nova senha temporária é:</p>
-                <div style="background: #1a1a2e; color: #FFD700; padding: 15px; border-radius: 8px; font-size: 20px; text-align: center; font-family: monospace;">
+                <div style="background: #1a1a2e; color: #a60ef7; padding: 15px; border-radius: 8px; font-size: 20px; text-align: center; font-family: monospace;">
                     {new_password}
                 </div>
                 <p style="color: #888; margin-top: 15px;">Recomendamos que altere sua senha após fazer login.</p>
@@ -679,11 +679,11 @@ async def admin_notify_expiring(admin: dict = Depends(get_admin_user)):
                 "subject": "HarmonyVox - Sua assinatura está expirando!",
                 "html": f"""
                 <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 20px;">
-                    <h2 style="color: #FFD700;">HarmonyVox</h2>
+                    <h2 style="color: #a60ef7;">HarmonyVox</h2>
                     <p>Olá <strong>{user['name']}</strong>,</p>
                     <p>Sua assinatura do plano <strong>{plan_label}</strong> expira em <strong>{exp_formatted}</strong>.</p>
                     <div style="background: #1a1a2e; padding: 15px; border-radius: 8px; margin: 15px 0;">
-                        <p style="color: #FFD700; margin: 0; font-size: 16px;">Renove agora por R$ {price:.2f}</p>
+                        <p style="color: #a60ef7; margin: 0; font-size: 16px;">Renove agora por R$ {price:.2f}</p>
                     </div>
                     <p>Acesse a plataforma e vá em <strong>Perfil → Assinatura</strong> para renovar.</p>
                     <p style="color: #888; font-size: 12px; margin-top: 20px;">Não perca acesso às suas faixas vocais!</p>
@@ -790,9 +790,9 @@ async def admin_reset_password(user_id: str, data: AdminPasswordReset, admin: di
                 "subject": "HarmonyVox - Nova Senha",
                 "html": f"""
                 <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 20px;">
-                    <h2 style="color: #FFD700;">HarmonyVox</h2>
+                    <h2 style="color: #a60ef7;">HarmonyVox</h2>
                     <p>Olá {user['name']}, sua nova senha é:</p>
-                    <div style="background: #1a1a2e; color: #FFD700; padding: 15px; border-radius: 8px; font-size: 20px; text-align: center; font-family: monospace;">
+                    <div style="background: #1a1a2e; color: #a60ef7; padding: 15px; border-radius: 8px; font-size: 20px; text-align: center; font-family: monospace;">
                         {new_pw}
                     </div>
                     <p style="color: #888; margin-top: 15px;">Recomendamos que altere sua senha após fazer login.</p>

@@ -54,8 +54,8 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center p-6" style={{ background: '#02040a' }}>
       <div className="w-full max-w-md">
         <div className="text-center mb-10">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full mb-4" style={{ background: 'rgba(255,215,0,0.1)', border: '1px solid rgba(255,215,0,0.2)' }}>
-            <Music className="w-8 h-8" style={{ color: '#FFD700' }} />
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full mb-4" style={{ background: 'rgba(166,14,247,0.1)', border: '1px solid rgba(166,14,247,0.2)' }}>
+            <Music className="w-8 h-8" style={{ color: '#a60ef7' }} />
           </div>
           <h1 className="text-4xl font-bold tracking-tight" style={{ fontFamily: 'Playfair Display, serif', color: '#f8fafc' }}>
             HarmonyVox
@@ -75,7 +75,7 @@ export default function LoginPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="seu@email.com"
                 required
-                className="h-12 bg-black/20 border-white/10 focus:border-[#FFD700] text-white placeholder:text-white/30"
+                className="h-12 bg-black/20 border-white/10 focus:border-[#a60ef7] text-white placeholder:text-white/30"
               />
             </div>
             <div className="space-y-2">
@@ -89,7 +89,7 @@ export default function LoginPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Sua senha"
                   required
-                  className="h-12 bg-black/20 border-white/10 focus:border-[#FFD700] text-white placeholder:text-white/30 pr-12"
+                  className="h-12 bg-black/20 border-white/10 focus:border-[#a60ef7] text-white placeholder:text-white/30 pr-12"
                 />
                 <button type="button" onClick={() => setShowPw(!showPw)} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/70">
                   {showPw ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
@@ -101,15 +101,15 @@ export default function LoginPage() {
               data-testid="login-submit-button"
               disabled={loading}
               className="w-full h-12 font-bold uppercase tracking-wider text-black"
-              style={{ background: '#FFD700', boxShadow: '0 0 15px rgba(255,215,0,0.3)' }}
+              style={{ background: '#a60ef7', boxShadow: '0 0 15px rgba(166,14,247,0.3)' }}
             >
               {loading ? 'Entrando...' : 'Entrar'}
             </Button>
             <div className="flex justify-between text-sm">
-              <button type="button" onClick={() => setShowForgot(true)} className="hover:underline" style={{ color: '#FFD700' }} data-testid="forgot-password-link">
+              <button type="button" onClick={() => setShowForgot(true)} className="hover:underline" style={{ color: '#a60ef7' }} data-testid="forgot-password-link">
                 Esqueci minha senha
               </button>
-              <Link to="/register" className="hover:underline" style={{ color: '#FFD700' }} data-testid="register-link">
+              <Link to="/register" className="hover:underline" style={{ color: '#a60ef7' }} data-testid="register-link">
                 Criar conta
               </Link>
             </div>
@@ -127,13 +127,13 @@ export default function LoginPage() {
                 value={forgotEmail}
                 onChange={(e) => setForgotEmail(e.target.value)}
                 required
-                className="h-12 bg-black/20 border-white/10 focus:border-[#FFD700] text-white"
+                className="h-12 bg-black/20 border-white/10 focus:border-[#a60ef7] text-white"
               />
             </div>
-            <Button type="submit" disabled={loading} className="w-full h-12 font-bold text-black" style={{ background: '#FFD700' }} data-testid="forgot-submit-button">
+            <Button type="submit" disabled={loading} className="w-full h-12 font-bold text-black" style={{ background: '#a60ef7' }} data-testid="forgot-submit-button">
               {loading ? 'Enviando...' : 'Enviar nova senha'}
             </Button>
-            <button type="button" onClick={() => setShowForgot(false)} className="text-sm hover:underline block" style={{ color: '#FFD700' }}>
+            <button type="button" onClick={() => setShowForgot(false)} className="text-sm hover:underline block" style={{ color: '#a60ef7' }}>
               Voltar ao login
             </button>
           </form>

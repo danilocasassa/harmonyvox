@@ -101,9 +101,9 @@ export default function ProfilePage() {
               onClick={() => setTab(t.id)}
               className="flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg text-sm font-medium transition-all"
               style={{
-                background: tab === t.id ? 'rgba(255,215,0,0.1)' : 'transparent',
-                color: tab === t.id ? '#FFD700' : '#94a3b8',
-                border: tab === t.id ? '1px solid rgba(255,215,0,0.2)' : '1px solid transparent'
+                background: tab === t.id ? 'rgba(166,14,247,0.1)' : 'transparent',
+                color: tab === t.id ? '#a60ef7' : '#94a3b8',
+                border: tab === t.id ? '1px solid rgba(166,14,247,0.2)' : '1px solid transparent'
               }}
             >
               <t.icon className="w-4 h-4" />
@@ -117,7 +117,7 @@ export default function ProfilePage() {
           <form onSubmit={handleUpdateProfile} className="glass-card rounded-xl p-8 space-y-6">
             <div className="space-y-2">
               <Label style={{ color: '#94a3b8' }}>Nome</Label>
-              <Input data-testid="profile-name" value={name} onChange={(e) => setName(e.target.value)} className="h-12 bg-black/20 border-white/10 focus:border-[#FFD700] text-white" />
+              <Input data-testid="profile-name" value={name} onChange={(e) => setName(e.target.value)} className="h-12 bg-black/20 border-white/10 focus:border-[#a60ef7] text-white" />
             </div>
             <div className="space-y-2">
               <Label style={{ color: '#94a3b8' }}>Email</Label>
@@ -127,9 +127,9 @@ export default function ProfilePage() {
               <Label style={{ color: '#94a3b8' }}>
                 <Phone className="w-4 h-4 inline mr-1" /> WhatsApp
               </Label>
-              <Input data-testid="profile-whatsapp" value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} placeholder="(99) 99999-9999" className="h-12 bg-black/20 border-white/10 focus:border-[#FFD700] text-white placeholder:text-white/30" />
+              <Input data-testid="profile-whatsapp" value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} placeholder="(99) 99999-9999" className="h-12 bg-black/20 border-white/10 focus:border-[#a60ef7] text-white placeholder:text-white/30" />
             </div>
-            <Button type="submit" disabled={saving} data-testid="profile-save-button" className="w-full h-12 font-bold text-black" style={{ background: '#FFD700' }}>
+            <Button type="submit" disabled={saving} data-testid="profile-save-button" className="w-full h-12 font-bold text-black" style={{ background: '#a60ef7' }}>
               {saving ? 'Salvando...' : 'Salvar'}
             </Button>
           </form>
@@ -140,13 +140,13 @@ export default function ProfilePage() {
           <form onSubmit={handleChangePassword} className="glass-card rounded-xl p-8 space-y-6">
             <div className="space-y-2">
               <Label style={{ color: '#94a3b8' }}>Senha Atual</Label>
-              <Input data-testid="profile-current-pw" type="password" value={currentPw} onChange={(e) => setCurrentPw(e.target.value)} required className="h-12 bg-black/20 border-white/10 focus:border-[#FFD700] text-white" />
+              <Input data-testid="profile-current-pw" type="password" value={currentPw} onChange={(e) => setCurrentPw(e.target.value)} required className="h-12 bg-black/20 border-white/10 focus:border-[#a60ef7] text-white" />
             </div>
             <div className="space-y-2">
               <Label style={{ color: '#94a3b8' }}>Nova Senha</Label>
-              <Input data-testid="profile-new-pw" type="password" value={newPw} onChange={(e) => setNewPw(e.target.value)} required className="h-12 bg-black/20 border-white/10 focus:border-[#FFD700] text-white" />
+              <Input data-testid="profile-new-pw" type="password" value={newPw} onChange={(e) => setNewPw(e.target.value)} required className="h-12 bg-black/20 border-white/10 focus:border-[#a60ef7] text-white" />
             </div>
-            <Button type="submit" disabled={saving} data-testid="profile-change-pw-button" className="w-full h-12 font-bold text-black" style={{ background: '#FFD700' }}>
+            <Button type="submit" disabled={saving} data-testid="profile-change-pw-button" className="w-full h-12 font-bold text-black" style={{ background: '#a60ef7' }}>
               {saving ? 'Alterando...' : 'Alterar Senha'}
             </Button>
           </form>
@@ -166,7 +166,7 @@ export default function ProfilePage() {
               </div>
               <div className="p-4 rounded-lg" style={{ background: 'rgba(255,255,255,0.03)' }}>
                 <p className="text-xs mb-1" style={{ color: '#475569' }}>Valor</p>
-                <p className="font-semibold" style={{ color: '#FFD700' }}>R$ {user?.price_locked?.toFixed(2) || '29.90'}</p>
+                <p className="font-semibold" style={{ color: '#a60ef7' }}>R$ {user?.price_locked?.toFixed(2) || '29.90'}</p>
               </div>
               <div className="p-4 rounded-lg" style={{ background: 'rgba(255,255,255,0.03)' }}>
                 <p className="text-xs mb-1" style={{ color: '#475569' }}>Plano</p>
@@ -181,7 +181,7 @@ export default function ProfilePage() {
                 </p>
               </div>
             </div>
-            <Button onClick={handlePayment} disabled={saving} data-testid="renew-subscription-button" className="w-full h-12 font-bold text-black" style={{ background: '#FFD700' }}>
+            <Button onClick={handlePayment} disabled={saving} data-testid="renew-subscription-button" className="w-full h-12 font-bold text-black" style={{ background: '#a60ef7' }}>
               <CreditCard className="w-4 h-4 mr-2" />
               {saving ? 'Processando...' : 'Renovar Assinatura'}
             </Button>

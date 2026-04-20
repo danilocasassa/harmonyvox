@@ -9,7 +9,7 @@ const API = process.env.REACT_APP_BACKEND_URL + '/api';
 
 const TRACK_COLORS = {
   soprano: '#FF6B9D', contralto: '#C084FC', tenor: '#38BDF8',
-  baritono: '#34D399', base: '#FFD700', default: '#94A3B8'
+  baritono: '#34D399', base: '#a60ef7', default: '#94A3B8'
 };
 
 function getTrackColor(type) {
@@ -253,7 +253,7 @@ export default function PlayerPage() {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ background: '#02040a' }}>
         <div className="animate-pulse text-center">
-          <div className="w-16 h-16 rounded-full mx-auto mb-4" style={{ background: 'rgba(255,215,0,0.1)' }} />
+          <div className="w-16 h-16 rounded-full mx-auto mb-4" style={{ background: 'rgba(166,14,247,0.1)' }} />
           <p style={{ color: '#94a3b8' }}>Carregando...</p>
         </div>
       </div>
@@ -277,9 +277,9 @@ export default function PlayerPage() {
 
       <main className="max-w-4xl mx-auto px-4 sm:px-6 py-6 pb-44">
         {audioLoading && (
-          <div className="mb-4 p-3 rounded-lg flex items-center gap-3" style={{ background: 'rgba(255,215,0,0.05)', border: '1px solid rgba(255,215,0,0.1)' }}>
-            <div className="animate-spin w-4 h-4 border-2 border-t-transparent rounded-full" style={{ borderColor: '#FFD700', borderTopColor: 'transparent' }} />
-            <span className="text-sm" style={{ color: '#FFD700' }}>Carregando faixas...</span>
+          <div className="mb-4 p-3 rounded-lg flex items-center gap-3" style={{ background: 'rgba(166,14,247,0.05)', border: '1px solid rgba(166,14,247,0.1)' }}>
+            <div className="animate-spin w-4 h-4 border-2 border-t-transparent rounded-full" style={{ borderColor: '#a60ef7', borderTopColor: 'transparent' }} />
+            <span className="text-sm" style={{ color: '#a60ef7' }}>Carregando faixas...</span>
           </div>
         )}
 
@@ -317,9 +317,9 @@ export default function PlayerPage() {
                     <button data-testid={`track-solo-${i}`} onClick={() => toggleSolo(i)}
                       className="px-2.5 py-1.5 rounded text-xs font-bold uppercase tracking-wider transition-all"
                       style={{
-                        border: `1px solid ${state.solo ? '#FFD700' : 'rgba(255,215,0,0.3)'}`,
-                        background: state.solo ? '#FFD700' : 'transparent',
-                        color: state.solo ? '#000' : '#FFD700',
+                        border: `1px solid ${state.solo ? '#a60ef7' : 'rgba(166,14,247,0.3)'}`,
+                        background: state.solo ? '#a60ef7' : 'transparent',
+                        color: state.solo ? '#000' : '#a60ef7',
                       }}>S</button>
                     <button data-testid={`track-mute-${i}`} onClick={() => toggleMute(i)}
                       className="px-2.5 py-1.5 rounded text-xs font-bold uppercase tracking-wider transition-all"
@@ -373,13 +373,13 @@ export default function PlayerPage() {
             <div className="flex items-center gap-3 mb-3">
               <span className="text-xs font-mono w-10 text-right" style={{ color: '#94a3b8' }}>{formatTime(currentTime)}</span>
               <input type="range" data-testid="player-seek-bar" min="0" max={duration || 0} step="0.1"
-                value={currentTime} onChange={handleSeek} className="flex-1" style={{ accentColor: '#FFD700' }} />
+                value={currentTime} onChange={handleSeek} className="flex-1" style={{ accentColor: '#a60ef7' }} />
               <span className="text-xs font-mono w-10" style={{ color: '#94a3b8' }}>{formatTime(duration)}</span>
             </div>
             <div className="flex items-center justify-center">
               <Button data-testid="player-play-button" onClick={togglePlay} disabled={audioLoading}
                 className="w-14 h-14 rounded-full flex items-center justify-center text-black disabled:opacity-50"
-                style={{ background: '#FFD700', boxShadow: '0 0 20px rgba(255,215,0,0.3)' }}>
+                style={{ background: '#a60ef7', boxShadow: '0 0 20px rgba(166,14,247,0.3)' }}>
                 {isPlaying ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6 ml-0.5" />}
               </Button>
             </div>

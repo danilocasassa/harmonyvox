@@ -64,7 +64,7 @@ export default function AdminWarmup() {
         <h1 className="text-3xl font-bold" style={{ fontFamily: 'Playfair Display, serif', color: '#f8fafc' }}>Warm Up</h1>
         <Dialog open={showCreate} onOpenChange={setShowCreate}>
           <DialogTrigger asChild>
-            <Button data-testid="admin-create-warmup-btn" className="h-10 font-bold text-black" style={{ background: '#FFD700' }}>
+            <Button data-testid="admin-create-warmup-btn" className="h-10 font-bold text-black" style={{ background: '#a60ef7' }}>
               <Plus className="w-4 h-4 mr-2" /> Novo Conteúdo
             </Button>
           </DialogTrigger>
@@ -107,7 +107,7 @@ export default function AdminWarmup() {
                   />
                 </label>
               </div>
-              <Button type="submit" disabled={saving} data-testid="admin-warmup-save-btn" className="w-full h-10 font-bold text-black" style={{ background: '#FFD700' }}>
+              <Button type="submit" disabled={saving} data-testid="admin-warmup-save-btn" className="w-full h-10 font-bold text-black" style={{ background: '#a60ef7' }}>
                 {saving ? 'Criando...' : 'Criar Conteúdo'}
               </Button>
             </form>
@@ -127,8 +127,8 @@ export default function AdminWarmup() {
           {items.map((item, idx) => (
             <div key={item.id} data-testid={`admin-warmup-item-${item.id}`} className="glass-card rounded-xl p-5 flex items-center justify-between">
               <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ background: 'rgba(255,215,0,0.1)' }}>
-                  <Flame className="w-5 h-5" style={{ color: '#FFD700' }} />
+                <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ background: 'rgba(166,14,247,0.1)' }}>
+                  <Flame className="w-5 h-5" style={{ color: '#a60ef7' }} />
                 </div>
                 <div>
                   <h3 className="font-semibold" style={{ color: '#f8fafc' }}>{item.title}</h3>

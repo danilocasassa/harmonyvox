@@ -5,7 +5,7 @@ import { toast } from 'sonner';
 import { Users, Music, Flame, DollarSign, Bell, AlertTriangle, TrendingUp, Calendar } from 'lucide-react';
 
 const PLAN_LABELS = { monthly: 'Mensal', semester: 'Semestral', annual: 'Anual' };
-const PLAN_COLORS = { monthly: '#38bdf8', semester: '#a78bfa', annual: '#FFD700' };
+const PLAN_COLORS = { monthly: '#38bdf8', semester: '#a78bfa', annual: '#a60ef7' };
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState(null);
@@ -58,7 +58,7 @@ export default function AdminDashboard() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <StatCard icon={Users} label="Usuários Ativos" value={stats?.active_users || 0} color="#22c55e" />
         <StatCard icon={Users} label="Inativos" value={stats?.inactive_users || 0} color="#ef4444" />
-        <StatCard icon={Music} label="Músicas" value={stats?.total_songs || 0} color="#FFD700" />
+        <StatCard icon={Music} label="Músicas" value={stats?.total_songs || 0} color="#a60ef7" />
         <StatCard icon={DollarSign} label="Receita Total" value={`R$ ${(stats?.total_revenue || 0).toFixed(2)}`} color="#22c55e"
           sub={`${stats?.total_payments || 0} pagamentos`} />
       </div>
@@ -67,7 +67,7 @@ export default function AdminDashboard() {
       <div className="glass-card rounded-xl p-5 sm:p-6">
         <div className="flex items-center justify-between mb-5">
           <h2 className="text-base sm:text-lg font-bold" style={{ fontFamily: 'Playfair Display, serif', color: '#f8fafc' }}>
-            <TrendingUp className="w-4 h-4 inline mr-2" style={{ color: '#FFD700' }} />
+            <TrendingUp className="w-4 h-4 inline mr-2" style={{ color: '#a60ef7' }} />
             Métricas por Plano
           </h2>
         </div>
@@ -107,7 +107,7 @@ export default function AdminDashboard() {
                 {revenue > 0 && (
                   <div className="mt-2 pt-2" style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
                     <p className="text-xs" style={{ color: '#475569' }}>Receita</p>
-                    <p className="text-sm font-bold" style={{ color: '#FFD700' }}>R$ {revenue.toFixed(2)}</p>
+                    <p className="text-sm font-bold" style={{ color: '#a60ef7' }}>R$ {revenue.toFixed(2)}</p>
                   </div>
                 )}
               </div>
@@ -153,7 +153,7 @@ export default function AdminDashboard() {
             )}
           </h2>
           <Button onClick={handleNotifyExpiring} disabled={notifying} data-testid="notify-expiring-btn"
-            className="h-9 text-xs font-bold text-black shrink-0" style={{ background: '#FFD700' }}>
+            className="h-9 text-xs font-bold text-black shrink-0" style={{ background: '#a60ef7' }}>
             <Bell className="w-3.5 h-3.5 mr-1" />
             {notifying ? 'Enviando...' : 'Notificar por Email'}
           </Button>
@@ -175,7 +175,7 @@ export default function AdminDashboard() {
                     <p className="text-xs truncate" style={{ color: '#94a3b8' }}>{u.email}</p>
                   </div>
                   <div className="flex items-center gap-3 text-xs flex-shrink-0">
-                    <span className="px-2 py-0.5 rounded" style={{ background: 'rgba(255,215,0,0.1)', color: '#FFD700' }}>
+                    <span className="px-2 py-0.5 rounded" style={{ background: 'rgba(166,14,247,0.1)', color: '#a60ef7' }}>
                       {PLAN_LABELS[u.plan_type] || 'Mensal'}
                     </span>
                     <span style={{ color: '#94a3b8' }}>R$ {(u.price_locked || 0).toFixed(2)}</span>

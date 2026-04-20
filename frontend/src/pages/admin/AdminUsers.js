@@ -208,11 +208,11 @@ export default function AdminUsers() {
         </h1>
         <div className="flex items-center gap-2 flex-wrap">
           <Button onClick={() => setShowBatchPricing(true)} data-testid="admin-batch-pricing-btn"
-            variant="outline" className="h-9 text-xs border-white/10 hover:bg-white/5" style={{ color: '#FFD700' }}>
+            variant="outline" className="h-9 text-xs border-white/10 hover:bg-white/5" style={{ color: '#a60ef7' }}>
             <Users className="w-3.5 h-3.5 mr-1" /> Preço em Lote
           </Button>
           <Button onClick={() => setShowCreate(true)} data-testid="admin-create-user-btn"
-            className="h-9 text-xs font-bold text-black" style={{ background: '#FFD700' }}>
+            className="h-9 text-xs font-bold text-black" style={{ background: '#a60ef7' }}>
             <Plus className="w-3.5 h-3.5 mr-1" /> Novo Usuário
           </Button>
         </div>
@@ -244,7 +244,7 @@ export default function AdminUsers() {
                     <div className="flex items-center gap-2 flex-wrap">
                       <h3 className="font-semibold truncate" style={{ color: '#f8fafc' }}>{user.name}</h3>
                       <span className="text-xs px-2 py-0.5 rounded"
-                        style={{ background: isAdmin ? 'rgba(255,215,0,0.1)' : 'rgba(56,189,248,0.1)', color: isAdmin ? '#FFD700' : '#38bdf8' }}>
+                        style={{ background: isAdmin ? 'rgba(166,14,247,0.1)' : 'rgba(56,189,248,0.1)', color: isAdmin ? '#a60ef7' : '#38bdf8' }}>
                         {isAdmin ? 'Admin' : PLAN_LABELS[user.plan_type] || 'Mensal'}
                       </span>
                       {!isAdmin && (
@@ -276,7 +276,7 @@ export default function AdminUsers() {
                       <button data-testid={`user-edit-price-btn-${user.id}`}
                         onClick={() => { setShowEditPrice(user.id); setEditPrice(user.price_locked?.toString() || ''); }}
                         className="p-2 rounded-lg hover:bg-white/5 transition-colors" title="Editar preço"
-                        style={{ color: '#FFD700' }}>
+                        style={{ color: '#a60ef7' }}>
                         <DollarSign className="w-4 h-4" />
                       </button>
                       <button data-testid={`user-reset-pw-btn-${user.id}`}
@@ -315,7 +315,7 @@ export default function AdminUsers() {
                     </div>
                     <div className="p-2 rounded-lg" style={{ background: 'rgba(255,255,255,0.02)' }}>
                       <p style={{ color: '#475569' }}>Valor</p>
-                      <p className="font-medium" style={{ color: '#FFD700' }}>R$ {user.price_locked?.toFixed(2) || '-'}</p>
+                      <p className="font-medium" style={{ color: '#a60ef7' }}>R$ {user.price_locked?.toFixed(2) || '-'}</p>
                     </div>
                     <div className="p-2 rounded-lg" style={{ background: 'rgba(255,255,255,0.02)' }}>
                       <p style={{ color: '#475569' }}>Plano</p>
@@ -378,7 +378,7 @@ export default function AdminUsers() {
               <Input data-testid="admin-new-user-price" type="number" step="0.01" placeholder="Usar padrão" value={newUser.price_locked}
                 onChange={(e) => setNewUser({ ...newUser, price_locked: e.target.value })} className="bg-black/20 border-white/10 text-white placeholder:text-white/30" />
             </div>
-            <Button type="submit" disabled={saving} data-testid="admin-save-user-btn" className="w-full h-10 font-bold text-black" style={{ background: '#FFD700' }}>
+            <Button type="submit" disabled={saving} data-testid="admin-save-user-btn" className="w-full h-10 font-bold text-black" style={{ background: '#a60ef7' }}>
               {saving ? 'Criando...' : 'Criar Usuário'}
             </Button>
           </form>
@@ -399,7 +399,7 @@ export default function AdminUsers() {
                 onChange={(e) => setActivateDate(e.target.value)} className="bg-black/20 border-white/10 text-white" />
             </div>
             <Button onClick={() => handleActivate(showActivate)} disabled={saving} data-testid="admin-activate-submit"
-              className="w-full h-10 font-bold text-black" style={{ background: '#FFD700' }}>
+              className="w-full h-10 font-bold text-black" style={{ background: '#a60ef7' }}>
               {saving ? 'Ativando...' : 'Ativar Usuário'}
             </Button>
           </div>
@@ -416,7 +416,7 @@ export default function AdminUsers() {
             <Input data-testid="admin-edit-expiry-input" type="date" value={editExpiry}
               onChange={(e) => setEditExpiry(e.target.value)} className="bg-black/20 border-white/10 text-white" />
             <Button onClick={() => handleEditExpiry(showEditExpiry)} disabled={saving} data-testid="admin-save-expiry"
-              className="w-full h-10 font-bold text-black" style={{ background: '#FFD700' }}>
+              className="w-full h-10 font-bold text-black" style={{ background: '#a60ef7' }}>
               {saving ? 'Salvando...' : 'Salvar Data'}
             </Button>
           </div>
@@ -434,7 +434,7 @@ export default function AdminUsers() {
             <Input data-testid="admin-edit-activation-input" type="date" value={editActivation}
               onChange={(e) => setEditActivation(e.target.value)} className="bg-black/20 border-white/10 text-white" />
             <Button onClick={() => handleEditActivation(showEditActivation)} disabled={saving} data-testid="admin-save-activation"
-              className="w-full h-10 font-bold text-black" style={{ background: '#FFD700' }}>
+              className="w-full h-10 font-bold text-black" style={{ background: '#a60ef7' }}>
               {saving ? 'Salvando...' : 'Salvar Data'}
             </Button>
           </div>
@@ -450,12 +450,12 @@ export default function AdminUsers() {
           <div className="space-y-4 mt-2">
             <p className="text-sm" style={{ color: '#94a3b8' }}>Defina o valor mensal para este usuário. Não afeta débitos anteriores.</p>
             <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm" style={{ color: '#FFD700' }}>R$</span>
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm" style={{ color: '#a60ef7' }}>R$</span>
               <Input data-testid="admin-edit-price-input" type="number" step="0.01" min="0" value={editPrice}
                 onChange={(e) => setEditPrice(e.target.value)} className="pl-10 bg-black/20 border-white/10 text-white" />
             </div>
             <Button onClick={() => handleEditPrice(showEditPrice)} disabled={saving} data-testid="admin-save-price"
-              className="w-full h-10 font-bold text-black" style={{ background: '#FFD700' }}>
+              className="w-full h-10 font-bold text-black" style={{ background: '#a60ef7' }}>
               {saving ? 'Salvando...' : 'Salvar Valor'}
             </Button>
           </div>
@@ -475,7 +475,7 @@ export default function AdminUsers() {
                 placeholder="Mínimo 6 caracteres" className="bg-black/20 border-white/10 text-white placeholder:text-white/30" />
             </div>
             <Button onClick={() => resetPassword(showPwReset, false)} disabled={saving} data-testid="admin-reset-pw-submit"
-              className="w-full h-10 font-bold text-black" style={{ background: '#FFD700' }}>
+              className="w-full h-10 font-bold text-black" style={{ background: '#a60ef7' }}>
               {saving ? 'Salvando...' : 'Definir Senha'}
             </Button>
             <div className="relative text-center">
@@ -502,7 +502,7 @@ export default function AdminUsers() {
               Atualize o valor para todos os usuários de uma vez. Não refaz débitos anteriores.
             </p>
             <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm" style={{ color: '#FFD700' }}>R$</span>
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm" style={{ color: '#a60ef7' }}>R$</span>
               <Input data-testid="admin-batch-price-input" type="number" step="0.01" min="0" value={batchPrice}
                 onChange={(e) => setBatchPrice(e.target.value)} placeholder="Novo valor mensal"
                 className="pl-10 bg-black/20 border-white/10 text-white placeholder:text-white/30" />
@@ -519,7 +519,7 @@ export default function AdminUsers() {
               <Switch checked={batchOnlyIncrease} onCheckedChange={setBatchOnlyIncrease} data-testid="admin-batch-only-increase" />
             </div>
             <Button onClick={handleBatchPricing} disabled={saving} data-testid="admin-batch-submit"
-              className="w-full h-10 font-bold text-black" style={{ background: '#FFD700' }}>
+              className="w-full h-10 font-bold text-black" style={{ background: '#a60ef7' }}>
               {saving ? 'Atualizando...' : 'Aplicar para Todos'}
             </Button>
           </div>
