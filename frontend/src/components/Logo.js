@@ -7,9 +7,9 @@ import logoImg from '../assets/logo.png';
  */
 export default function Logo({ size = 'md' }) {
   const sizes = {
-    sm: { img: 28, harmony: '1.4rem', vox: '1.1rem', gap: 8 },
-    md: { img: 44, harmony: '2.2rem', vox: '1.7rem', gap: 12 },
-    lg: { img: 64, harmony: '3.2rem', vox: '2.5rem', gap: 16 },
+    sm: { img: 28, text: '1.4rem', gap: 8 },
+    md: { img: 44, text: '2.2rem', gap: 12 },
+    lg: { img: 64, text: '3.2rem', gap: 16 },
   };
 
   const s = sizes[size] || sizes.md;
@@ -24,7 +24,7 @@ export default function Logo({ size = 'md' }) {
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 4 }}>
         <span style={{
           fontFamily: "'Bebas Neue', sans-serif",
-          fontSize: s.harmony,
+          fontSize: s.text,
           fontWeight: 700,
           color: '#f8fafc',
           letterSpacing: '0.05em',
@@ -34,9 +34,9 @@ export default function Logo({ size = 'md' }) {
         </span>
         <span style={{
           fontFamily: "'Raleway', sans-serif",
-          fontSize: s.vox,
+          fontSize: s.text,
           fontWeight: 200,
-          color: '#a60ef7',
+          color: '#f8fafc',
           letterSpacing: '0.25em',
           lineHeight: 1,
           textTransform: 'uppercase',
