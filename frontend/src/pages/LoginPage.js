@@ -58,7 +58,7 @@ export default function LoginPage() {
             <Music className="w-8 h-8" style={{ color: '#FFD700' }} />
           </div>
           <h1 className="text-4xl font-bold tracking-tight" style={{ fontFamily: 'Playfair Display, serif', color: '#f8fafc' }}>
-            Vocal Layers
+            HarmonyVox
           </h1>
           <p className="mt-2 text-sm" style={{ color: '#94a3b8' }}>Treine seus naipes vocais</p>
         </div>

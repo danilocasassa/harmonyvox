@@ -304,10 +304,10 @@ async def forgot_password(data: ForgotPassword):
         params = {
             "from": SENDER_EMAIL,
             "to": [data.email],
-            "subject": "Vocal Layers - Recuperação de Senha",
+            "subject": "HarmonyVox - Recuperação de Senha",
             "html": f"""
             <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 20px;">
-                <h2 style="color: #FFD700;">Vocal Layers</h2>
+                <h2 style="color: #FFD700;">HarmonyVox</h2>
                 <p>Sua nova senha temporária é:</p>
                 <div style="background: #1a1a2e; color: #FFD700; padding: 15px; border-radius: 8px; font-size: 20px; text-align: center; font-family: monospace;">
                     {new_password}
@@ -676,10 +676,10 @@ async def admin_notify_expiring(admin: dict = Depends(get_admin_user)):
             params = {
                 "from": SENDER_EMAIL,
                 "to": [user['email']],
-                "subject": "Vocal Layers - Sua assinatura está expirando!",
+                "subject": "HarmonyVox - Sua assinatura está expirando!",
                 "html": f"""
                 <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 20px;">
-                    <h2 style="color: #FFD700;">Vocal Layers</h2>
+                    <h2 style="color: #FFD700;">HarmonyVox</h2>
                     <p>Olá <strong>{user['name']}</strong>,</p>
                     <p>Sua assinatura do plano <strong>{plan_label}</strong> expira em <strong>{exp_formatted}</strong>.</p>
                     <div style="background: #1a1a2e; padding: 15px; border-radius: 8px; margin: 15px 0;">
@@ -787,10 +787,10 @@ async def admin_reset_password(user_id: str, data: AdminPasswordReset, admin: di
             params = {
                 "from": SENDER_EMAIL,
                 "to": [user['email']],
-                "subject": "Vocal Layers - Nova Senha",
+                "subject": "HarmonyVox - Nova Senha",
                 "html": f"""
                 <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 20px;">
-                    <h2 style="color: #FFD700;">Vocal Layers</h2>
+                    <h2 style="color: #FFD700;">HarmonyVox</h2>
                     <p>Olá {user['name']}, sua nova senha é:</p>
                     <div style="background: #1a1a2e; color: #FFD700; padding: 15px; border-radius: 8px; font-size: 20px; text-align: center; font-family: monospace;">
                         {new_pw}

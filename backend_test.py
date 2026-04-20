@@ -3,7 +3,7 @@ import sys
 import json
 from datetime import datetime
 
-class VocalLayersAPITester:
+class HarmonyVoxAPITester:
     def __init__(self, base_url="http://localhost:8001/api"):
         self.base_url = base_url
         self.user_token = None
@@ -545,8 +545,8 @@ class VocalLayersAPITester:
         return all_passed
 
 def main():
-    print("🎵 Starting Vocal Layers API Tests...")
-    tester = VocalLayersAPITester()
+    print("🎵 Starting HarmonyVox API Tests...")
+    tester = HarmonyVoxAPITester()
 
     # Test sequence
     tests = [

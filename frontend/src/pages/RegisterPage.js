@@ -59,7 +59,7 @@ export default function RegisterPage() {
           <h1 className="text-3xl sm:text-4xl font-bold tracking-tight" style={{ fontFamily: 'Playfair Display, serif', color: '#f8fafc' }}>
             Criar Conta
           </h1>
-          <p className="mt-2 text-sm" style={{ color: '#94a3b8' }}>Junte-se ao Vocal Layers</p>
+          <p className="mt-2 text-sm" style={{ color: '#94a3b8' }}>Junte-se ao HarmonyVox</p>
         </div>
 
         <form onSubmit={handleRegister} className="glass-card rounded-xl p-6 sm:p-8 space-y-5">

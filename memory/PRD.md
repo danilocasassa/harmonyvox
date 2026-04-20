@@ -1,4 +1,4 @@
-# Vocal Layers - PRD
+# HarmonyVox - PRD
 
 ## Problem Statement
 Plataforma musical para coristas e grupos vocais onde usuários podem praticar naipes vocais individualmente com controles de volume/mute/solo por faixa. Interface de usuário + painel admin.

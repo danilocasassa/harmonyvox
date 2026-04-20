@@ -39,7 +39,7 @@ export default function HomePage() {
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate('/')}>
             <Music className="w-6 h-6" style={{ color: '#FFD700' }} />
-            <span className="text-lg font-bold" style={{ fontFamily: 'Playfair Display, serif', color: '#f8fafc' }}>Vocal Layers</span>
+            <span className="text-lg font-bold" style={{ fontFamily: 'Playfair Display, serif', color: '#f8fafc' }}>HarmonyVox</span>
           </div>
           <nav className="flex items-center gap-2">
             <button
