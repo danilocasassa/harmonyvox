@@ -14,8 +14,11 @@ from datetime import datetime, timezone, timedelta
 import calendar
 import bcrypt
 import jwt
-import aiofiles
+import boto3
+from botocore.client import Config
 import resend
+import stripe
+import json
 import string
 import random
 
@@ -32,10 +35,24 @@ JWT_SECRET = os.environ.get('JWT_SECRET', 'default_secret')
 RESEND_API_KEY = os.environ.get('RESEND_API_KEY', '')
 SENDER_EMAIL = os.environ.get('SENDER_EMAIL', 'onboarding@resend.dev')
 STRIPE_API_KEY = os.environ.get('STRIPE_API_KEY', '')
-UPLOAD_DIR = ROOT_DIR / 'uploads'
-UPLOAD_DIR.mkdir(exist_ok=True)
+STRIPE_WEBHOOK_SECRET = os.environ.get('STRIPE_WEBHOOK_SECRET', '')
+R2_ACCOUNT_ID = os.environ.get('R2_ACCOUNT_ID', '')
+R2_ACCESS_KEY_ID = os.environ.get('R2_ACCESS_KEY_ID', '')
+R2_SECRET_ACCESS_KEY = os.environ.get('R2_SECRET_ACCESS_KEY', '')
+R2_BUCKET_NAME = os.environ.get('R2_BUCKET_NAME', 'harmonyvox')
 
 resend.api_key = RESEND_API_KEY
+stripe.api_key = STRIPE_API_KEY
+
+# Cloudflare R2 client (S3-compatible)
+s3_client = boto3.client(
+    's3',
+    endpoint_url=f'https://{R2_ACCOUNT_ID}.r2.cloudflarestorage.com',
+    aws_access_key_id=R2_ACCESS_KEY_ID,
+    aws_secret_access_key=R2_SECRET_ACCESS_KEY,
+    config=Config(signature_version='s3v4'),
+    region_name='auto'
+)
 
 app = FastAPI()
 api_router = APIRouter(prefix="/api")
@@ -373,62 +390,42 @@ async def stream_audio(song_id: str, track_index: int, request: Request, user: d
     if track_index < 0 or track_index >= len(tracks):
         raise HTTPException(status_code=404, detail='Faixa não encontrada')
     track = tracks[track_index]
-    file_path = Path(track['file_path'])
-    if not file_path.exists():
-        raise HTTPException(status_code=404, detail='Arquivo não encontrado')
-    file_size = file_path.stat().st_size
-    content_type = 'audio/mpeg' if str(file_path).endswith('.mp3') else 'audio/wav'
+    r2_key = track.get('r2_key', '')
+    ext = track.get('file_ext', '.mp3')
+    content_type = 'audio/mpeg' if ext == '.mp3' else 'audio/wav'
 
+    get_kwargs = {'Bucket': R2_BUCKET_NAME, 'Key': r2_key}
     range_header = request.headers.get('range')
     if range_header:
-        range_start, range_end = 0, file_size - 1
-        range_spec = range_header.replace('bytes=', '')
-        if '-' in range_spec:
-            parts = range_spec.split('-')
-            range_start = int(parts[0]) if parts[0] else 0
-            range_end = int(parts[1]) if parts[1] else file_size - 1
-        chunk_size = range_end - range_start + 1
+        get_kwargs['Range'] = range_header
 
-        async def range_generator():
-            async with aiofiles.open(file_path, 'rb') as f:
-                await f.seek(range_start)
-                remaining = chunk_size
-                while remaining > 0:
-                    read_size = min(8192, remaining)
-                    data = await f.read(read_size)
-                    if not data:
-                        break
-                    remaining -= len(data)
-                    yield data
+    try:
+        r2_response = await asyncio.to_thread(s3_client.get_object, **get_kwargs)
+    except Exception as e:
+        raise HTTPException(status_code=404, detail='Arquivo não encontrado')
 
-        return StreamingResponse(
-            range_generator(), status_code=206, media_type=content_type,
-            headers={
-                'Content-Range': f'bytes {range_start}-{range_end}/{file_size}',
-                'Accept-Ranges': 'bytes', 'Content-Length': str(chunk_size),
-                'Content-Disposition': 'inline',
-                'Cache-Control': 'no-store, no-cache, must-revalidate',
-                'X-Content-Type-Options': 'nosniff',
-            }
-        )
+    body = r2_response['Body']
+    content_length = str(r2_response.get('ContentLength', 0))
 
-    async def file_generator():
-        async with aiofiles.open(file_path, 'rb') as f:
-            while True:
-                data = await f.read(8192)
-                if not data:
-                    break
-                yield data
+    async def generate():
+        while True:
+            chunk = await asyncio.to_thread(body.read, 8192)
+            if not chunk:
+                break
+            yield chunk
 
-    return StreamingResponse(
-        file_generator(), media_type=content_type,
-        headers={
-            'Content-Length': str(file_size), 'Accept-Ranges': 'bytes',
-            'Content-Disposition': 'inline',
-            'Cache-Control': 'no-store, no-cache, must-revalidate',
-            'X-Content-Type-Options': 'nosniff',
-        }
-    )
+    headers = {
+        'Accept-Ranges': 'bytes',
+        'Content-Length': content_length,
+        'Content-Disposition': 'inline',
+        'Cache-Control': 'no-store, no-cache, must-revalidate',
+        'X-Content-Type-Options': 'nosniff',
+    }
+    if range_header:
+        headers['Content-Range'] = r2_response.get('ContentRange', '')
+        return StreamingResponse(generate(), status_code=206, media_type=content_type, headers=headers)
+
+    return StreamingResponse(generate(), media_type=content_type, headers=headers)
 
 # ============ WARMUP ROUTES ============
 
@@ -449,32 +446,35 @@ async def stream_warmup(item_id: str, request: Request, user: dict = Depends(get
     item = await db.warmup_content.find_one({'id': item_id}, {'_id': 0})
     if not item:
         raise HTTPException(status_code=404, detail='Conteúdo não encontrado')
-    file_path = Path(item.get('file_path', ''))
-    if not file_path.exists():
-        raise HTTPException(status_code=404, detail='Arquivo não encontrado')
-    file_size = file_path.stat().st_size
-    ext = file_path.suffix.lower()
-    content_types = {'.mp3': 'audio/mpeg', '.wav': 'audio/wav', '.mp4': 'video/mp4', '.webm': 'video/webm'}
-    content_type = content_types.get(ext, 'application/octet-stream')
+    r2_key = item.get('r2_key', '')
+    ext = item.get('file_ext', '.mp3')
+    content_types_map = {'.mp3': 'audio/mpeg', '.wav': 'audio/wav', '.mp4': 'video/mp4', '.webm': 'video/webm'}
+    content_type = content_types_map.get(ext, 'application/octet-stream')
 
-    async def file_generator():
-        async with aiofiles.open(file_path, 'rb') as f:
-            while True:
-                data = await f.read(8192)
-                if not data:
-                    break
-                yield data
+    try:
+        r2_response = await asyncio.to_thread(s3_client.get_object, Bucket=R2_BUCKET_NAME, Key=r2_key)
+    except Exception as e:
+        raise HTTPException(status_code=404, detail='Arquivo não encontrado')
+
+    body = r2_response['Body']
+    content_length = str(r2_response.get('ContentLength', 0))
+
+    async def generate():
+        while True:
+            chunk = await asyncio.to_thread(body.read, 8192)
+            if not chunk:
+                break
+            yield chunk
 
     return StreamingResponse(
-        file_generator(), media_type=content_type,
-        headers={'Content-Length': str(file_size), 'Content-Disposition': 'inline', 'Cache-Control': 'no-store, no-cache'}
+        generate(), media_type=content_type,
+        headers={'Content-Length': content_length, 'Content-Disposition': 'inline', 'Cache-Control': 'no-store, no-cache'}
     )
 
 # ============ PAYMENT ROUTES ============
 
 @api_router.post("/payments/create-session")
 async def create_payment_session(data: PaymentCreateRequest, request: Request, user: dict = Depends(get_current_user)):
-    from emergentintegrations.payments.stripe.checkout import StripeCheckout, CheckoutSessionRequest
     pricing = await db.pricing_config.find_one({}, {'_id': 0})
     user_price = user.get('price_locked')
     plan_type = user.get('plan_type', 'monthly')
@@ -489,40 +489,47 @@ async def create_payment_session(data: PaymentCreateRequest, request: Request, u
         base = 29.90
 
     amount = calc_plan_amount(base, plan_type)
+    plan_label = PLAN_CONFIG.get(plan_type, {}).get('label', 'Mensal')
 
     host_url = data.origin_url.rstrip('/')
     success_url = f"{host_url}/payment/success?session_id={{CHECKOUT_SESSION_ID}}"
     cancel_url = f"{host_url}/payment"
 
-    webhook_url = f"{str(request.base_url).rstrip('/')}/api/webhook/stripe"
-    stripe_checkout = StripeCheckout(api_key=STRIPE_API_KEY, webhook_url=webhook_url)
+    def create_session():
+        return stripe.checkout.Session.create(
+            payment_method_types=['card'],
+            line_items=[{
+                'price_data': {
+                    'currency': 'brl',
+                    'product_data': {'name': f'HarmonyVox - Plano {plan_label}'},
+                    'unit_amount': int(amount * 100),
+                },
+                'quantity': 1,
+            }],
+            mode='payment',
+            success_url=success_url,
+            cancel_url=cancel_url,
+            metadata={'user_id': user['id'], 'user_email': user['email'], 'plan_type': plan_type}
+        )
 
-    checkout_request = CheckoutSessionRequest(
-        amount=float(amount), currency="brl",
-        success_url=success_url, cancel_url=cancel_url,
-        metadata={'user_id': user['id'], 'user_email': user['email'], 'plan_type': plan_type}
-    )
-    session = await stripe_checkout.create_checkout_session(checkout_request)
+    session = await asyncio.to_thread(create_session)
 
     await db.payment_transactions.insert_one({
         'id': str(uuid.uuid4()), 'user_id': user['id'], 'user_email': user['email'],
-        'session_id': session.session_id, 'amount': float(amount), 'currency': 'brl',
+        'session_id': session.id, 'amount': float(amount), 'currency': 'brl',
         'plan_type': plan_type, 'status': 'initiated', 'payment_status': 'pending',
         'metadata': {'plan_type': plan_type},
         'created_at': datetime.now(timezone.utc).isoformat()
     })
 
-    return {'url': session.url, 'session_id': session.session_id}
+    return {'url': session.url, 'session_id': session.id}
 
 @api_router.get("/payments/status/{session_id}")
-async def get_payment_status(session_id: str, request: Request, user: dict = Depends(get_current_user)):
-    from emergentintegrations.payments.stripe.checkout import StripeCheckout
-    webhook_url = f"{str(request.base_url).rstrip('/')}/api/webhook/stripe"
-    stripe_checkout = StripeCheckout(api_key=STRIPE_API_KEY, webhook_url=webhook_url)
-    status = await stripe_checkout.get_checkout_status(session_id)
+async def get_payment_status(session_id: str, user: dict = Depends(get_current_user)):
+    session = await asyncio.to_thread(stripe.checkout.Session.retrieve, session_id)
     tx = await db.payment_transactions.find_one({'session_id': session_id}, {'_id': 0})
 
-    if status.payment_status == 'paid' and tx and tx.get('payment_status') != 'paid':
+    if session.payment_status == 'paid' and tx and tx.get('payment_status') != 'paid':
         await db.payment_transactions.update_one(
             {'session_id': session_id},
             {'$set': {'status': 'complete', 'payment_status': 'paid', 'paid_at': datetime.now(timezone.utc).isoformat()}}
@@ -533,41 +540,47 @@ async def get_payment_status(session_id: str, request: Request, user: dict = Dep
             {'id': user['id']},
             {'$set': {'subscription_expires': new_expiry, 'is_active': True}}
         )
-    elif status.status == 'expired' and tx and tx.get('status') != 'expired':
+    elif session.status == 'expired' and tx and tx.get('status') != 'expired':
         await db.payment_transactions.update_one(
             {'session_id': session_id},
             {'$set': {'status': 'expired', 'payment_status': 'expired'}}
         )
 
     return {
-        'status': status.status, 'payment_status': status.payment_status,
-        'amount_total': status.amount_total, 'currency': status.currency
+        'status': session.status, 'payment_status': session.payment_status,
+        'amount_total': session.amount_total, 'currency': session.currency
     }
 
 @api_router.post("/webhook/stripe")
 async def stripe_webhook(request: Request):
-    from emergentintegrations.payments.stripe.checkout import StripeCheckout
     body = await request.body()
-    webhook_url = f"{str(request.base_url).rstrip('/')}/api/webhook/stripe"
-    stripe_checkout = StripeCheckout(api_key=STRIPE_API_KEY, webhook_url=webhook_url)
+    sig_header = request.headers.get("Stripe-Signature")
     try:
-        webhook_response = await stripe_checkout.handle_webhook(body, request.headers.get("Stripe-Signature"))
-        if webhook_response.payment_status == 'paid':
-            session_id = webhook_response.session_id
-            tx = await db.payment_transactions.find_one({'session_id': session_id}, {'_id': 0})
-            if tx and tx.get('payment_status') != 'paid':
-                await db.payment_transactions.update_one(
-                    {'session_id': session_id},
-                    {'$set': {'status': 'complete', 'payment_status': 'paid', 'paid_at': datetime.now(timezone.utc).isoformat()}}
-                )
-                user_id = tx.get('user_id') or (webhook_response.metadata or {}).get('user_id')
-                plan_type = tx.get('plan_type', 'monthly')
-                if user_id:
-                    new_expiry = calc_subscription_expiry(plan_type).isoformat()
-                    await db.users.update_one(
-                        {'id': user_id},
-                        {'$set': {'subscription_expires': new_expiry, 'is_active': True}}
+        if STRIPE_WEBHOOK_SECRET:
+            event = await asyncio.to_thread(
+                stripe.Webhook.construct_event, body, sig_header, STRIPE_WEBHOOK_SECRET
+            )
+        else:
+            event = stripe.Event.construct_from(json.loads(body), stripe.api_key)
+
+        if event.type == 'checkout.session.completed':
+            session = event.data.object
+            if session.payment_status == 'paid':
+                session_id = session.id
+                tx = await db.payment_transactions.find_one({'session_id': session_id}, {'_id': 0})
+                if tx and tx.get('payment_status') != 'paid':
+                    await db.payment_transactions.update_one(
+                        {'session_id': session_id},
+                        {'$set': {'status': 'complete', 'payment_status': 'paid', 'paid_at': datetime.now(timezone.utc).isoformat()}}
                     )
+                    user_id = tx.get('user_id') or (session.metadata or {}).get('user_id')
+                    plan_type = tx.get('plan_type', 'monthly')
+                    if user_id:
+                        new_expiry = calc_subscription_expiry(plan_type).isoformat()
+                        await db.users.update_one(
+                            {'id': user_id},
+                            {'$set': {'subscription_expires': new_expiry, 'is_active': True}}
+                        )
         return {'status': 'ok'}
     except Exception as e:
         logger.error(f"Webhook error: {e}")
@@ -852,9 +865,12 @@ async def admin_delete_song(song_id: str, admin: dict = Depends(get_admin_user))
     if not song:
         raise HTTPException(status_code=404, detail='Música não encontrada')
     for track in song.get('tracks', []):
-        fp = Path(track.get('file_path', ''))
-        if fp.exists():
-            fp.unlink()
+        r2_key = track.get('r2_key', '')
+        if r2_key:
+            try:
+                await asyncio.to_thread(s3_client.delete_object, Bucket=R2_BUCKET_NAME, Key=r2_key)
+            except Exception as e:
+                logger.error(f"Erro ao deletar faixa do R2: {e}")
     await db.songs.delete_one({'id': song_id})
     return {'message': 'Música removida'}
 
@@ -870,12 +886,14 @@ async def admin_add_track(
     if ext not in ('.mp3', '.wav'):
         raise HTTPException(status_code=400, detail='Use MP3 ou WAV.')
     file_id = str(uuid.uuid4())
-    file_path = UPLOAD_DIR / f"{file_id}{ext}"
-    async with aiofiles.open(file_path, 'wb') as f:
-        content = await file.read()
-        await f.write(content)
+    r2_key = f"songs/{song_id}/{file_id}{ext}"
+    content = await file.read()
+    mime_type = 'audio/mpeg' if ext == '.mp3' else 'audio/wav'
+    await asyncio.to_thread(
+        s3_client.put_object, Bucket=R2_BUCKET_NAME, Key=r2_key, Body=content, ContentType=mime_type
+    )
     track = {
-        'name': track_name, 'type': track_type, 'file_path': str(file_path),
+        'name': track_name, 'type': track_type, 'r2_key': r2_key,
         'file_ext': ext, 'uploaded_at': datetime.now(timezone.utc).isoformat()
     }
     await db.songs.update_one({'id': song_id}, {'$push': {'tracks': track}})
@@ -891,9 +909,12 @@ async def admin_delete_track(song_id: str, track_index: int, admin: dict = Depen
     if track_index < 0 or track_index >= len(tracks):
         raise HTTPException(status_code=404, detail='Faixa não encontrada')
     track = tracks[track_index]
-    fp = Path(track.get('file_path', ''))
-    if fp.exists():
-        fp.unlink()
+    r2_key = track.get('r2_key', '')
+    if r2_key:
+        try:
+            await asyncio.to_thread(s3_client.delete_object, Bucket=R2_BUCKET_NAME, Key=r2_key)
+        except Exception as e:
+            logger.error(f"Erro ao deletar faixa do R2: {e}")
     tracks.pop(track_index)
     await db.songs.update_one({'id': song_id}, {'$set': {'tracks': tracks}})
     updated = await db.songs.find_one({'id': song_id}, {'_id': 0})
@@ -916,13 +937,16 @@ async def admin_create_warmup(
     if ext not in allowed:
         raise HTTPException(status_code=400, detail=f'Use: {", ".join(allowed)}')
     file_id = str(uuid.uuid4())
-    file_path = UPLOAD_DIR / f"warmup_{file_id}{ext}"
-    async with aiofiles.open(file_path, 'wb') as f:
-        content = await file.read()
-        await f.write(content)
+    r2_key = f"warmup/{file_id}{ext}"
+    content = await file.read()
+    mime_types = {'.mp3': 'audio/mpeg', '.wav': 'audio/wav', '.mp4': 'video/mp4', '.webm': 'video/webm'}
+    mime_type = mime_types.get(ext, 'application/octet-stream')
+    await asyncio.to_thread(
+        s3_client.put_object, Bucket=R2_BUCKET_NAME, Key=r2_key, Body=content, ContentType=mime_type
+    )
     item = {
         'id': str(uuid.uuid4()), 'title': title, 'description': description,
-        'content_type': content_type, 'file_path': str(file_path), 'file_ext': ext,
+        'content_type': content_type, 'r2_key': r2_key, 'file_ext': ext,
         'created_at': datetime.now(timezone.utc).isoformat()
     }
     await db.warmup_content.insert_one(item)
@@ -933,9 +957,12 @@ async def admin_delete_warmup(item_id: str, admin: dict = Depends(get_admin_user
     item = await db.warmup_content.find_one({'id': item_id}, {'_id': 0})
     if not item:
         raise HTTPException(status_code=404, detail='Conteúdo não encontrado')
-    fp = Path(item.get('file_path', ''))
-    if fp.exists():
-        fp.unlink()
+    r2_key = item.get('r2_key', '')
+    if r2_key:
+        try:
+            await asyncio.to_thread(s3_client.delete_object, Bucket=R2_BUCKET_NAME, Key=r2_key)
+        except Exception as e:
+            logger.error(f"Erro ao deletar do R2: {e}")
     await db.warmup_content.delete_one({'id': item_id})
     return {'message': 'Conteúdo removido'}
 
